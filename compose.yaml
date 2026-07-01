@@ -1,0 +1,39 @@
+# Don't need to include version at the top anymore just start with services
+
+services:
+  gym_mongo:
+    image: mongo:latest
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: admin123
+    
+    volumes:
+      - gym_data:/data/db
+      # the above is named volumes maybe ?
+  
+  gym_backend:
+    build: ./backend
+    image: backend:1.0
+    ports:
+      - "8080:8080"
+    depends_on: 
+      - gym_mongo
+    volumes:
+      - ./backend:/app
+      - /app/node_modules
+  
+  gym_frontend:
+    build: ./frontend
+    image: frontend:1.0
+    ports:
+      - "5173:5173"
+    depends_on:
+      - gym_backend
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+
+volumes:
+  gym_data:

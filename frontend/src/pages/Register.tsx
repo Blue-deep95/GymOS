@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { Box, Typography, TextField, Button, Container, Grid, Link as MuiLink } from '@mui/material';
 import { Link as RouterLink, useNavigate } from 'react-router';
+import { useAuth } from '../context/AuthContext';
+import { useMutation } from '../hooks/useApi';
 
 export const Register = () => {
   const [fullName, setFullName] = useState('');
@@ -12,20 +14,28 @@ export const Register = () => {
   const [medicalNotes, setMedicalNotes] = useState('');
 
   const navigate = useNavigate();
+  const { setAuthData } = useAuth();
+  const { execute: register, loading, error } = useMutation('/api/auth/register', 'POST');
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log('Registering member:', {
-      fullName,
-      email,
-      password,
-      phone,
-      emergencyContact,
-      fitnessGoals,
-      medicalNotes,
-    });
-    // Mock register redirect
-    navigate('/');
+    try {
+      const response = await register({
+        fullName,
+        email,
+        password,
+        phone,
+        emergencyContact,
+        fitnessGoals,
+        medicalNotes,
+      });
+      if (response && response.accessToken) {
+        setAuthData(response.accessToken, response.user.role);
+        navigate('/');
+      }
+    } catch (err) {
+      // Error handled by useMutation hook
+    }
   };
 
   return (
@@ -132,6 +142,13 @@ export const Register = () => {
 
             {/* Form */}
             <Box component="form" onSubmit={handleSubmit} noValidate>
+              {error && (
+                <Box sx={{ mb: 3 }}>
+                  <Typography color="error" variant="body2" sx={{ fontWeight: 600 }}>
+                    {error}
+                  </Typography>
+                </Box>
+              )}
               <Grid container spacing={3} sx={{ mb: 4 }}>
                 {/* Account Details */}
                 <Grid size={{ xs: 12, sm: 6 }}>
@@ -225,6 +242,7 @@ export const Register = () => {
                 type="submit"
                 variant="contained"
                 fullWidth
+                disabled={loading}
                 sx={{
                   py: 2,
                   fontSize: '16px',
@@ -237,7 +255,7 @@ export const Register = () => {
                   mb: 4,
                 }}
               >
-                Submit Registration
+                {loading ? 'Registering...' : 'Submit Registration'}
               </Button>
 
               {/* Footer Links */}

@@ -1,8 +1,11 @@
 import { useState } from 'react';
 import { AppBar, Toolbar, Box, Typography, Button, Container, IconButton, Menu, MenuItem, Divider } from '@mui/material';
-import { Link as RouterLink } from 'react-router';
+import { Link as RouterLink, useNavigate } from 'react-router';
+import { useAuth } from '../context/AuthContext';
 
 export const Navbar = () => {
+  const { token, role, setAuthData } = useAuth();
+  const navigate = useNavigate();
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
 
   const handleOpenMenu = (event: React.MouseEvent<HTMLElement>) => {
@@ -11,6 +14,12 @@ export const Navbar = () => {
 
   const handleCloseMenu = () => {
     setAnchorEl(null);
+  };
+
+  const handleLogout = () => {
+    setAuthData(null, null);
+    handleCloseMenu();
+    navigate('/');
   };
 
   const menuItems = ['Features', 'Plans', 'About', 'Contact'];
@@ -33,6 +42,29 @@ export const Navbar = () => {
     </svg>
   );
 
+  const ProfileIcon = (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+      <circle cx="12" cy="7" r="4" />
+    </svg>
+  );
+
+  const SignOutIcon = (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+      <polyline points="16 17 21 12 16 7" />
+      <line x1="21" y1="12" x2="9" y2="12" />
+    </svg>
+  );
+
+  // Determine dashboard redirect link based on role
+  const getDashboardLink = () => {
+    if (role === 'owner') return '/owner/dashboard';
+    if (role === 'receptionist') return '/receptionist/dashboard';
+    if (role === 'trainer') return '/trainer/dashboard';
+    return '/';
+  };
+
   return (
     <AppBar
       position="static"
@@ -51,6 +83,8 @@ export const Navbar = () => {
           {/* Logo 'A/' - Custom logotype with forward slash terminal (Always Visible) */}
           <Box sx={{ display: 'flex', alignItems: 'center' }}>
             <Typography
+              component={RouterLink}
+              to="/"
               sx={{
                 fontFamily: "'Manrope', sans-serif",
                 fontWeight: 900,
@@ -60,6 +94,7 @@ export const Navbar = () => {
                 userSelect: 'none',
                 display: 'inline-flex',
                 alignItems: 'center',
+                textDecoration: 'none'
               }}
             >
               A/
@@ -114,47 +149,94 @@ export const Navbar = () => {
 
           {/* Action Buttons (Desktop) & Hamburger Trigger (Mobile) */}
           <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
-            {/* Desktop Action Buttons with Start Icons */}
-            <Button
-              variant="outlined"
-              startIcon={SignInIcon}
-              component={RouterLink}
-              to="/signin"
-              sx={{
-                py: 1,
-                px: 2.5,
-                fontSize: '14px',
-                height: '42px',
-                display: { xs: 'none', md: 'inline-flex' },
-                '& .MuiButton-startIcon': {
-                  mr: 1,
-                  display: 'flex',
-                  alignItems: 'center',
-                },
-              }}
-            >
-              Sign In
-            </Button>
-            <Button
-              variant="contained"
-              startIcon={RegisterIcon}
-              component={RouterLink}
-              to="/register"
-              sx={{
-                py: 1,
-                px: 2.5,
-                fontSize: '14px',
-                height: '42px',
-                display: { xs: 'none', md: 'inline-flex' },
-                '& .MuiButton-startIcon': {
-                  mr: 1,
-                  display: 'flex',
-                  alignItems: 'center',
-                },
-              }}
-            >
-              Register
-            </Button>
+            {token ? (
+              <>
+                {/* Logged In Desktop State */}
+                <Button
+                  variant="outlined"
+                  startIcon={ProfileIcon}
+                  component={RouterLink}
+                  to={getDashboardLink()}
+                  sx={{
+                    py: 1,
+                    px: 2.5,
+                    fontSize: '14px',
+                    height: '42px',
+                    display: { xs: 'none', md: 'inline-flex' },
+                    '& .MuiButton-startIcon': {
+                      mr: 1,
+                      display: 'flex',
+                      alignItems: 'center',
+                    },
+                  }}
+                >
+                  Control Lab
+                </Button>
+                <Button
+                  variant="contained"
+                  startIcon={SignOutIcon}
+                  onClick={handleLogout}
+                  sx={{
+                    py: 1,
+                    px: 2.5,
+                    fontSize: '14px',
+                    height: '42px',
+                    display: { xs: 'none', md: 'inline-flex' },
+                    '& .MuiButton-startIcon': {
+                      mr: 1,
+                      display: 'flex',
+                      alignItems: 'center',
+                    },
+                  }}
+                >
+                  Sign Out
+                </Button>
+              </>
+            ) : (
+              <>
+                {/* Logged Out Desktop State */}
+                <Button
+                  variant="outlined"
+                  startIcon={SignInIcon}
+                  component={RouterLink}
+                  to="/signin"
+                  sx={{
+                    py: 1,
+                    px: 2.5,
+                    fontSize: '14px',
+                    height: '42px',
+                    display: { xs: 'none', md: 'inline-flex' },
+                    '& .MuiButton-startIcon': {
+                      mr: 1,
+                      display: 'flex',
+                      alignItems: 'center',
+                    },
+                  }}
+                >
+                  Sign In
+                </Button>
+                <Button
+                  variant="contained"
+                  startIcon={RegisterIcon}
+                  component={RouterLink}
+                  to="/register"
+                  sx={{
+                    py: 1,
+                    px: 2.5,
+                    fontSize: '14px',
+                    height: '42px',
+                    display: { xs: 'none', md: 'inline-flex' },
+                    '& .MuiButton-startIcon': {
+                      mr: 1,
+                      display: 'flex',
+                      alignItems: 'center',
+                    },
+                  }}
+                >
+                  Register
+                </Button>
+              </>
+            )}
 
             {/* Hamburger Button for mobile (Right Aligned) */}
             <IconButton
@@ -227,55 +309,109 @@ export const Navbar = () => {
             {/* Divider separating links and actions */}
             <Divider sx={{ my: 1, borderColor: '#e6e6e6' }} />
 
-            {/* Mobile Actions with Icons: Sign In & Register */}
-            <MenuItem
-              onClick={handleCloseMenu}
-              component={RouterLink}
-              to="/signin"
-              sx={{
-                fontFamily: "'Manrope', sans-serif",
-                fontWeight: 600,
-                fontSize: '15px',
-                color: '#1a1a1a',
-                py: 1.5,
-                px: 3,
-                display: 'flex',
-                alignItems: 'center',
-                gap: 1.5,
-                '&:hover': {
-                  backgroundColor: '#f2f2f2',
-                },
-              }}
-            >
-              <Box sx={{ display: 'flex', alignItems: 'center', color: '#1a1a1a' }}>
-                {SignInIcon}
-              </Box>
-              Sign In
-            </MenuItem>
-            <MenuItem
-              onClick={handleCloseMenu}
-              component={RouterLink}
-              to="/register"
-              sx={{
-                fontFamily: "'Manrope', sans-serif",
-                fontWeight: 600,
-                fontSize: '15px',
-                color: '#1a1a1a',
-                py: 1.5,
-                px: 3,
-                display: 'flex',
-                alignItems: 'center',
-                gap: 1.5,
-                '&:hover': {
-                  backgroundColor: '#f2f2f2',
-                },
-              }}
-            >
-              <Box sx={{ display: 'flex', alignItems: 'center', color: '#1a1a1a' }}>
-                {RegisterIcon}
-              </Box>
-              Register
-            </MenuItem>
+            {token ? (
+              <>
+                {/* Mobile Logged In Actions */}
+                <MenuItem
+                  onClick={handleCloseMenu}
+                  component={RouterLink}
+                  to={getDashboardLink()}
+                  sx={{
+                    fontFamily: "'Manrope', sans-serif",
+                    fontWeight: 600,
+                    fontSize: '15px',
+                    color: '#1a1a1a',
+                    py: 1.5,
+                    px: 3,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 1.5,
+                    '&:hover': {
+                      backgroundColor: '#f2f2f2',
+                    },
+                  }}
+                >
+                  <Box sx={{ display: 'flex', alignItems: 'center', color: '#1a1a1a' }}>
+                    {ProfileIcon}
+                  </Box>
+                  Control Lab
+                </MenuItem>
+                <MenuItem
+                  onClick={handleLogout}
+                  sx={{
+                    fontFamily: "'Manrope', sans-serif",
+                    fontWeight: 600,
+                    fontSize: '15px',
+                    color: '#1a1a1a',
+                    py: 1.5,
+                    px: 3,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 1.5,
+                    '&:hover': {
+                      backgroundColor: '#f2f2f2',
+                    },
+                  }}
+                >
+                  <Box sx={{ display: 'flex', alignItems: 'center', color: '#1a1a1a' }}>
+                    {SignOutIcon}
+                  </Box>
+                  Sign Out
+                </MenuItem>
+              </>
+            ) : (
+              <>
+                {/* Mobile Logged Out Actions */}
+                <MenuItem
+                  onClick={handleCloseMenu}
+                  component={RouterLink}
+                  to="/signin"
+                  sx={{
+                    fontFamily: "'Manrope', sans-serif",
+                    fontWeight: 600,
+                    fontSize: '15px',
+                    color: '#1a1a1a',
+                    py: 1.5,
+                    px: 3,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 1.5,
+                    '&:hover': {
+                      backgroundColor: '#f2f2f2',
+                    },
+                  }}
+                >
+                  <Box sx={{ display: 'flex', alignItems: 'center', color: '#1a1a1a' }}>
+                    {SignInIcon}
+                  </Box>
+                  Sign In
+                </MenuItem>
+                <MenuItem
+                  onClick={handleCloseMenu}
+                  component={RouterLink}
+                  to="/register"
+                  sx={{
+                    fontFamily: "'Manrope', sans-serif",
+                    fontWeight: 600,
+                    fontSize: '15px',
+                    color: '#1a1a1a',
+                    py: 1.5,
+                    px: 3,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 1.5,
+                    '&:hover': {
+                      backgroundColor: '#f2f2f2',
+                    },
+                  }}
+                >
+                  <Box sx={{ display: 'flex', alignItems: 'center', color: '#1a1a1a' }}>
+                    {RegisterIcon}
+                  </Box>
+                  Register
+                </MenuItem>
+              </>
+            )}
           </Menu>
 
         </Toolbar>

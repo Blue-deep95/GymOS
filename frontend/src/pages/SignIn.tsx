@@ -1,17 +1,31 @@
 import { useState } from 'react';
 import { Box, Typography, TextField, Button, Container, Grid, Link as MuiLink } from '@mui/material';
 import { Link as RouterLink, useNavigate } from 'react-router';
+import { useAuth } from '../context/AuthContext';
+import { useMutation } from '../hooks/useApi';
 
 export const SignIn = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const navigate = useNavigate();
+  const { setAuthData } = useAuth();
+  const { execute: login, loading, error } = useMutation('/api/auth/login', 'POST');
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log('Signing in with:', { email, password });
-    // Mock login redirect
-    navigate('/');
+    try {
+      const response = await login({ email, password });
+      if (response && response.accessToken) {
+        setAuthData(response.accessToken, response.user.role);
+        if (response.user.role === 'owner') {
+          navigate('/owner/dashboard');
+        } else {
+          navigate('/');
+        }
+      }
+    } catch (err) {
+      // Error handled by useMutation hook
+    }
   };
 
   return (
@@ -118,6 +132,13 @@ export const SignIn = () => {
 
             {/* Form */}
             <Box component="form" onSubmit={handleSubmit} noValidate>
+              {error && (
+                <Box sx={{ mb: 3 }}>
+                  <Typography color="error" variant="body2" sx={{ fontWeight: 600 }}>
+                    {error}
+                  </Typography>
+                </Box>
+              )}
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3, mb: 4 }}>
                 <TextField
                   label="Email Address"
@@ -154,6 +175,7 @@ export const SignIn = () => {
                 type="submit"
                 variant="contained"
                 fullWidth
+                disabled={loading}
                 sx={{
                   py: 2,
                   fontSize: '16px',
@@ -166,7 +188,7 @@ export const SignIn = () => {
                   mb: 4,
                 }}
               >
-                Sign In to Portal
+                {loading ? 'Signing In...' : 'Sign In to Portal'}
               </Button>
 
               {/* Footer Links */}
