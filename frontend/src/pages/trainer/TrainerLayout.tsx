@@ -145,7 +145,7 @@ export const TrainerLayout: React.FC = () => {
                   pb: 1.5,
                   position: 'relative',
                   transition: 'color 0.2s ease',
-                  borderBottom: isActive ? '2px solid #1a1a1a' : '2px solid transparent',
+                  borderBottom: isActive ? '3px solid #fdf313' : '3px solid transparent',
                   '&:hover': {
                     color: '#1a1a1a'
                   }

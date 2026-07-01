@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
 import { Box, Typography, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Chip, Select, MenuItem, FormControl, TextField, InputAdornment } from '@mui/material';
 import { useFetch, useMutation } from '../../hooks/useApi';
+import { useToast } from '../../context/ToastContext';
 
 export const RecepMembers: React.FC = () => {
+  const { showToast } = useToast();
   const { data: membersData, loading: membersLoading, error: membersError, refetch } = useFetch('/api/receptionist/members');
   const { data: trainersData } = useFetch('/api/receptionist/trainers');
   const [search, setSearch] = useState('');
@@ -23,9 +25,10 @@ export const RecepMembers: React.FC = () => {
       // Modify URL dynamically for the mutation
       const url = `/api/receptionist/members/${memberId}/membership`;
       await assignMembershipMutation.execute({ planType }, { url });
+      showToast('Membership plan assigned successfully', 'success');
       refetch();
-    } catch (err) {
-      alert('Failed to assign membership');
+    } catch (err: any) {
+      showToast(err.message || 'Failed to assign membership', 'error');
     }
   };
 
@@ -33,9 +36,10 @@ export const RecepMembers: React.FC = () => {
     try {
       const url = `/api/receptionist/members/${memberId}/assign-trainer`;
       await assignTrainerMutation.execute({ trainerId: trainerId || null }, { url });
+      showToast(trainerId ? 'Trainer assigned successfully' : 'Trainer unassigned successfully', 'success');
       refetch();
-    } catch (err) {
-      alert('Failed to assign trainer');
+    } catch (err: any) {
+      showToast(err.message || 'Failed to assign trainer', 'error');
     }
   };
 

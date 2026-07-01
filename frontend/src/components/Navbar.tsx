@@ -22,7 +22,12 @@ export const Navbar = () => {
     navigate('/');
   };
 
-  const menuItems = ['Features', 'Plans', 'About', 'Contact'];
+  const menuItems = [
+    { label: 'Features', path: '/#features', isAnchor: true },
+    { label: 'Plans', path: '/plans', isAnchor: false },
+    { label: 'About', path: '/about', isAnchor: false },
+    { label: 'Contact', path: '/contact', isAnchor: false },
+  ];
 
   // Custom inline SVG icons matching feather icons
   const SignInIcon = (
@@ -62,6 +67,7 @@ export const Navbar = () => {
     if (role === 'owner') return '/owner/dashboard';
     if (role === 'receptionist') return '/receptionist/dashboard';
     if (role === 'trainer') return '/trainer/dashboard';
+    if (role === 'user' || role === 'member') return '/member/dashboard';
     return '/';
   };
 
@@ -125,8 +131,10 @@ export const Navbar = () => {
           >
             {menuItems.map((item) => (
               <Button
-                key={item}
-                href={`#${item.toLowerCase()}`}
+                key={item.label}
+                component={item.isAnchor ? 'a' : RouterLink}
+                to={item.isAnchor ? undefined : item.path}
+                href={item.isAnchor ? item.path : undefined}
                 variant="text"
                 sx={{
                   fontFamily: "'Manrope', sans-serif",
@@ -142,7 +150,7 @@ export const Navbar = () => {
                   },
                 }}
               >
-                {item}
+                {item.label}
               </Button>
             ))}
           </Box>
@@ -282,10 +290,11 @@ export const Navbar = () => {
             {/* Standard Nav Items */}
             {menuItems.map((item) => (
               <MenuItem
-                key={item}
+                key={item.label}
                 onClick={handleCloseMenu}
-                component="a"
-                href={`#${item.toLowerCase()}`}
+                component={item.isAnchor ? 'a' : RouterLink}
+                to={item.isAnchor ? undefined : item.path}
+                href={item.isAnchor ? item.path : undefined}
                 sx={{
                   fontFamily: "'Manrope', sans-serif",
                   fontWeight: 500,
@@ -302,7 +311,7 @@ export const Navbar = () => {
                   },
                 }}
               >
-                {item}
+                {item.label}
               </MenuItem>
             ))}
 

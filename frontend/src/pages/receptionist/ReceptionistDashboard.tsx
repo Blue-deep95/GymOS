@@ -54,7 +54,7 @@ export const ReceptionistDashboard: React.FC = () => {
       {/* Metrics Row */}
       <Grid container spacing={3} sx={{ mb: 6 }}>
         <Grid size={{ xs: 12, sm: 4 }}>
-          <Card elevation={0} sx={{ border: '1px solid #e6e6e6', borderRadius: '8px', backgroundColor: '#ffffff' }}>
+          <Card elevation={0} sx={{ border: '1px solid #e6e6e6', borderLeft: '4px solid #fdf313', borderRadius: '8px', backgroundColor: '#ffffff' }}>
             <CardContent sx={{ p: 3 }}>
               <Typography variant="caption" sx={{ textTransform: 'uppercase', color: '#949494', fontWeight: 700, letterSpacing: '1px' }}>
                 Active Memberships
@@ -69,7 +69,7 @@ export const ReceptionistDashboard: React.FC = () => {
           </Card>
         </Grid>
         <Grid size={{ xs: 12, sm: 4 }}>
-          <Card elevation={0} sx={{ border: '1px solid #e6e6e6', borderRadius: '8px', backgroundColor: '#ffffff', relative: 'relative' }}>
+          <Card elevation={0} sx={{ border: '1px solid #e6e6e6', borderLeft: '4px solid #fdf313', borderRadius: '8px', backgroundColor: '#ffffff', position: 'relative' }}>
             {/* Yellow accent on warning */}
             {expiringMembers.length > 0 && (
               <Box sx={{ position: 'absolute', top: 0, left: 0, right: 0, height: '4px', backgroundColor: '#fdf313' }} />
@@ -88,7 +88,7 @@ export const ReceptionistDashboard: React.FC = () => {
           </Card>
         </Grid>
         <Grid size={{ xs: 12, sm: 4 }}>
-          <Card elevation={0} sx={{ border: '1px solid #e6e6e6', borderRadius: '8px', backgroundColor: '#ffffff' }}>
+          <Card elevation={0} sx={{ border: '1px solid #e6e6e6', borderLeft: '4px solid #fdf313', borderRadius: '8px', backgroundColor: '#ffffff' }}>
             <CardContent sx={{ p: 3 }}>
               <Typography variant="caption" sx={{ textTransform: 'uppercase', color: '#949494', fontWeight: 700, letterSpacing: '1px' }}>
                 Expired Profiles

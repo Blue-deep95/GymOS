@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Box, Typography, TextField, Button, Card, CardContent, Grid, IconButton, Divider, Paper } from '@mui/material';
 import { useFetch, useMutation } from '../../hooks/useApi';
+import { useToast } from '../../context/ToastContext';
 
 interface ExerciseInput {
   exerciseName: string;
@@ -15,6 +16,7 @@ interface DayInput {
 }
 
 export const WorkoutTemplates: React.FC = () => {
+  const { showToast } = useToast();
   const { data, error, refetch } = useFetch('/api/trainer/templates');
   const createTemplateMutation = useMutation('/api/trainer/templates', 'POST');
   const deleteTemplateMutation = useMutation('', 'DELETE');
@@ -66,7 +68,7 @@ export const WorkoutTemplates: React.FC = () => {
   const handleCreateTemplate = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!templateName.trim()) {
-      alert('Template name is required');
+      showToast('Template name is required', 'warning');
       return;
     }
 
@@ -76,13 +78,14 @@ export const WorkoutTemplates: React.FC = () => {
         description,
         days
       });
+      showToast('Workout blueprint created successfully', 'success');
       // Clear form
       setTemplateName('');
       setDescription('');
       setDays([{ dayName: 'Day 1 - Push', exercises: [{ exerciseName: 'Bench Press', sets: 3, reps: '8-12', notes: 'Flat barbell' }] }]);
       refetch();
-    } catch (err) {
-      alert('Failed to create template');
+    } catch (err: any) {
+      showToast(err.message || 'Failed to create template', 'error');
     }
   };
 
@@ -91,9 +94,10 @@ export const WorkoutTemplates: React.FC = () => {
     try {
       const url = `/api/trainer/templates/${id}`;
       await deleteTemplateMutation.execute(null, { url });
+      showToast('Workout blueprint deleted successfully', 'success');
       refetch();
-    } catch (err) {
-      alert('Failed to delete template');
+    } catch (err: any) {
+      showToast(err.message || 'Failed to delete template', 'error');
     }
   };
 

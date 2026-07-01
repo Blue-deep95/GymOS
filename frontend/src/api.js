@@ -67,8 +67,14 @@ api.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config;
 
-    // Check if error is 401 (Unauthorized) and the request hasn't been retried yet
-    if (error.response?.status === 401 && !originalRequest._retry) {
+    // Check if error is 401 (Unauthorized) and the request hasn't been retried yet, and is not login/register
+    if (
+      error.response?.status === 401 &&
+      !originalRequest._retry &&
+      originalRequest.url &&
+      !originalRequest.url.includes('/api/auth/login') &&
+      !originalRequest.url.includes('/api/auth/register')
+    ) {
       // If we are already in the middle of refreshing a token, queue this request
       if (isRefreshing) {
         return new Promise((resolve, reject) => {

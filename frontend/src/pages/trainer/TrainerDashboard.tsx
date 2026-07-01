@@ -46,7 +46,7 @@ export const TrainerDashboard: React.FC = () => {
       {/* Stats Counter Row */}
       <Grid container spacing={3} sx={{ mb: 5 }}>
         <Grid size={{ xs: 12, sm: 6 }}>
-          <Card elevation={0} sx={{ border: '1px solid #e6e6e6', borderRadius: '8px', backgroundColor: '#ffffff' }}>
+          <Card elevation={0} sx={{ border: '1px solid #e6e6e6', borderLeft: '4px solid #fdf313', borderRadius: '8px', backgroundColor: '#ffffff' }}>
             <CardContent sx={{ p: 3 }}>
               <Typography variant="caption" sx={{ textTransform: 'uppercase', color: '#949494', fontWeight: 700, letterSpacing: '1px' }}>
                 Assigned Athletes
@@ -61,7 +61,7 @@ export const TrainerDashboard: React.FC = () => {
           </Card>
         </Grid>
         <Grid size={{ xs: 12, sm: 6 }}>
-          <Card elevation={0} sx={{ border: '1px solid #e6e6e6', borderRadius: '8px', backgroundColor: '#ffffff' }}>
+          <Card elevation={0} sx={{ border: '1px solid #e6e6e6', borderLeft: '4px solid #fdf313', borderRadius: '8px', backgroundColor: '#ffffff' }}>
             <CardContent sx={{ p: 3 }}>
               <Typography variant="caption" sx={{ textTransform: 'uppercase', color: '#949494', fontWeight: 700, letterSpacing: '1px' }}>
                 Last 30 Days Check-Ins

@@ -52,6 +52,7 @@ export const OwnerDashboard: React.FC = () => {
               elevation={0}
               sx={{
                 border: '1px solid #e6e6e6',
+                borderLeft: '4px solid #fdf313',
                 borderRadius: '8px',
                 backgroundColor: '#ffffff',
                 transition: 'all 0.2s ease',

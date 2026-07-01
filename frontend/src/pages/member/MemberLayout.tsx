@@ -1,19 +1,13 @@
 import React from 'react';
-import { Outlet, Link, useNavigate, useLocation } from 'react-router';
+import { Outlet, Link, useLocation } from 'react-router';
 import { Box, Typography, Button, Container } from '@mui/material';
 import { useAuth } from '../../context/AuthContext';
 
-export const OwnerLayout: React.FC = () => {
-  const { token, role, setAuthData } = useAuth();
-  const navigate = useNavigate();
+export const MemberLayout: React.FC = () => {
+  const { token } = useAuth();
   const location = useLocation();
 
-  const handleLogout = () => {
-    setAuthData(null, null);
-    navigate('/signin');
-  };
-
-  // If user is not authenticated, redirect or show signin link
+  // If user is not authenticated, redirect to signin
   if (!token) {
     return (
       <Container maxWidth="sm" sx={{ mt: 10, textAlign: 'center' }}>
@@ -21,7 +15,7 @@ export const OwnerLayout: React.FC = () => {
           Authentication Required
         </Typography>
         <Typography variant="body1" color="text.secondary" sx={{ mb: 2 }}>
-          You must sign in as an owner to access this control dashboard.
+          You must sign in to access your member portal.
         </Typography>
         <Button
           variant="contained"
@@ -41,56 +35,10 @@ export const OwnerLayout: React.FC = () => {
     );
   }
 
-  // If authenticated but role is not owner, show Access Denied
-  if (role !== 'owner') {
-    return (
-      <Container maxWidth="sm" sx={{ mt: 10, textAlign: 'center' }}>
-        <Typography variant="h3" color="error" gutterBottom sx={{ fontFamily: "'Manrope', sans-serif", fontWeight: 900 }}>
-          ACCESS DENIED
-        </Typography>
-        <Typography variant="h6" gutterBottom>
-          Role '{role}' is not authorized.
-        </Typography>
-        <Typography variant="body1" color="text.secondary" sx={{ mb: 2 }}>
-          Only users with the role 'owner' are permitted to enter the control panel.
-        </Typography>
-        <Button
-          variant="outlined"
-          component={Link}
-          to="/"
-          sx={{
-            borderColor: '#1a1a1a',
-            color: '#1a1a1a',
-            textTransform: 'none',
-            fontWeight: 600,
-            mr: 2,
-            '&:hover': { borderColor: '#333333', backgroundColor: '#f2f2f2' }
-          }}
-        >
-          Return Home
-        </Button>
-        <Button
-          variant="contained"
-          onClick={handleLogout}
-          sx={{
-            backgroundColor: '#1a1a1a',
-            color: '#ffffff',
-            textTransform: 'none',
-            fontWeight: 600,
-            '&:hover': { backgroundColor: '#333333' }
-          }}
-        >
-          Sign In with Another Account
-        </Button>
-      </Container>
-    );
-  }
-
   const navItems = [
-    { label: 'Overview', path: '/owner/dashboard' },
-    { label: 'Member Directory', path: '/owner/members' },
-    { label: 'Trainer Registry', path: '/owner/trainers' },
-    { label: 'Report Generator', path: '/owner/reports' },
+    { label: 'Overview', path: '/member/dashboard' },
+    { label: 'My Workout Plan', path: '/member/workout' },
+    { label: 'My Attendance', path: '/member/attendance' },
   ];
 
   return (
@@ -111,7 +59,7 @@ export const OwnerLayout: React.FC = () => {
             A/ gymOS
           </Typography>
           <Typography variant="caption" color="text.secondary" sx={{ letterSpacing: '1px', textTransform: 'uppercase', fontWeight: 600 }}>
-            Owner Control Lab
+            Member Portal
           </Typography>
         </Box>
 
@@ -124,7 +72,6 @@ export const OwnerLayout: React.FC = () => {
             overflowX: 'auto',
             whiteSpace: 'nowrap',
             gap: { xs: 3, sm: 5 },
-            // Hide scrollbar but keep scroll functionality
             scrollbarWidth: 'none',
             '&::-webkit-scrollbar': {
               display: 'none'

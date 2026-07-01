@@ -6,6 +6,7 @@ const connectMongoDB = require('./config/db')
 const authRoutes = require('./routes/auth')
 const receptionistRoutes = require('./routes/receptionist')
 const trainerRoutes = require('./routes/trainer')
+const memberRoutes = require('./routes/member')
 
 const app = express()
 
@@ -36,6 +37,9 @@ app.use('/api/receptionist', receptionistRoutes)
 
 // Mount Trainer Routes
 app.use('/api/trainer', trainerRoutes)
+
+// Mount Member Routes
+app.use('/api/member', memberRoutes)
 
 
 app.listen(PORT , () => console.log("Server running on PORT --> "+ PORT))

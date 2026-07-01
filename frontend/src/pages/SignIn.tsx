@@ -19,6 +19,12 @@ export const SignIn = () => {
         setAuthData(response.accessToken, response.user.role);
         if (response.user.role === 'owner') {
           navigate('/owner/dashboard');
+        } else if (response.user.role === 'trainer') {
+          navigate('/trainer/dashboard');
+        } else if (response.user.role === 'receptionist') {
+          navigate('/receptionist/dashboard');
+        } else if (response.user.role === 'user' || response.user.role === 'member') {
+          navigate('/member/dashboard');
         } else {
           navigate('/');
         }

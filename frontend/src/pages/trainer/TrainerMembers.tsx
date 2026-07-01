@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
 import { Box, Typography, Select, MenuItem, FormControl, TextField, InputAdornment, Accordion, AccordionSummary, AccordionDetails, Chip, Grid, Paper } from '@mui/material';
 import { useFetch, useMutation } from '../../hooks/useApi';
+import { useToast } from '../../context/ToastContext';
 
 export const TrainerMembers: React.FC = () => {
+  const { showToast } = useToast();
   const { data: membersData, loading: membersLoading, error: membersError, refetch } = useFetch('/api/trainer/members');
   const { data: templatesData } = useFetch('/api/trainer/templates');
   const [search, setSearch] = useState('');
@@ -22,9 +24,10 @@ export const TrainerMembers: React.FC = () => {
     try {
       const url = `/api/trainer/members/${memberId}/assign-program`;
       await assignProgramMutation.execute({ templateId }, { url });
+      showToast('Workout program assigned successfully', 'success');
       refetch();
-    } catch (err) {
-      alert('Failed to assign workout program');
+    } catch (err: any) {
+      showToast(err.message || 'Failed to assign workout program', 'error');
     }
   };
 
@@ -33,9 +36,10 @@ export const TrainerMembers: React.FC = () => {
     try {
       const url = `/api/trainer/members/${memberId}/assign-program`;
       await removeProgramMutation.execute(null, { url });
+      showToast('Workout program unassigned successfully', 'success');
       refetch();
-    } catch (err) {
-      alert('Failed to remove workout program');
+    } catch (err: any) {
+      showToast(err.message || 'Failed to remove workout program', 'error');
     }
   };
 
