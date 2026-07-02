@@ -86,7 +86,7 @@ export const Register = () => {
                 letterSpacing: '-1.5px',
               }}
             >
-              A/ gymOS
+              S/ gymOS
             </Typography>
           </Box>
         </Grid>
@@ -119,7 +119,7 @@ export const Register = () => {
                   textDecoration: 'none',
                 }}
               >
-                A/ gymOS
+                S/ gymOS
               </MuiLink>
               
               <Typography

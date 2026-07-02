@@ -1,6 +1,8 @@
 const User = require('../models/User');
 const Attendance = require('../models/Attendance');
 const AssignedProgram = require('../models/AssignedProgram');
+const Measurement = require('../models/Measurement');
+const Membership = require('../models/Membership');
 
 /**
  * Fetch all operational and workout metrics for a member's dashboard profile.
@@ -67,6 +69,92 @@ const getDashboardData = async (req, res) => {
     }
 };
 
+/**
+ * Retrieve progress measurement logs history for the logged-in member.
+ */
+const getProgressHistory = async (req, res) => {
+    try {
+        const memberId = req.user.id;
+        const progressHistory = await Measurement.find({ memberId })
+            .sort({ recordedAt: -1 });
+
+        res.status(200).json({ progressHistory });
+    } catch (err) {
+        res.status(500).json({ message: 'Error fetching progress logs', error: err.message });
+    }
+};
+
+/**
+ * Handle member self-service membership package purchase.
+ */
+const purchaseMembership = async (req, res) => {
+    try {
+        const memberId = req.user.id;
+        const { planType } = req.body;
+
+        if (!planType || !['1 Month', '3 Months', '6 Months'].includes(planType)) {
+            return res.status(400).json({ message: 'Invalid membership plan type. Must be "1 Month", "3 Months", or "6 Months".' });
+        }
+
+        const member = await User.findById(memberId).populate('currentMembership');
+        if (!member) {
+            return res.status(404).json({ message: 'Member profile not found' });
+        }
+
+        // Prevent purchasing if already subscribed with an Active/Frozen plan
+        if (member.currentMembership && ['Active', 'Frozen'].includes(member.currentMembership.status)) {
+            return res.status(400).json({
+                message: 'You already have an active or frozen membership subscription. Contact reception to upgrade or modify your package.'
+            });
+        }
+
+        // Calculate end date
+        const start = new Date();
+        const end = new Date(start);
+
+        if (planType === '1 Month') {
+            end.setMonth(end.getMonth() + 1);
+        } else if (planType === '3 Months') {
+            end.setMonth(end.getMonth() + 3);
+        } else if (planType === '6 Months') {
+            end.setMonth(end.getMonth() + 6);
+        }
+
+        // Price mapping
+        let price = 50;
+        if (planType === '3 Months') price = 135;
+        if (planType === '6 Months') price = 240;
+
+        // Create new membership record
+        const newMembership = new Membership({
+            memberId,
+            planType,
+            startDate: start,
+            endDate: end,
+            status: 'Active',
+            price
+        });
+
+        await newMembership.save();
+
+        // Update user
+        member.currentMembership = newMembership._id;
+        if (member.role === 'user') {
+            member.role = 'member';
+        }
+        await member.save();
+
+        res.status(201).json({
+            message: 'Membership acquired successfully',
+            membership: newMembership
+        });
+    } catch (err) {
+        res.status(500).json({ message: 'Error processing membership purchase', error: err.message });
+    }
+};
+
 module.exports = {
-    getDashboardData
+    getDashboardData,
+    getProgressHistory,
+    purchaseMembership
 };

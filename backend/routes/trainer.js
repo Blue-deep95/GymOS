@@ -15,6 +15,9 @@ router.get('/dashboard', trainerController.getDashboardStats);
 router.get('/members', trainerController.getAssignedMembers);
 router.post('/members/:id/assign-program', trainerController.assignProgram);
 router.delete('/members/:id/assign-program', trainerController.removeProgram);
+router.post('/members/:id/progress', trainerController.recordProgress);
+router.get('/members/:id/progress', trainerController.getProgressHistory);
+router.get('/members/:id/profile', trainerController.getMemberProfileDetail);
 
 // Workout Templates CRUD
 router.get('/templates', trainerController.getWorkoutTemplates);

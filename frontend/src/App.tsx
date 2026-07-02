@@ -28,6 +28,8 @@ import { MemberLayout } from './pages/member/MemberLayout';
 import { MemberDashboard } from './pages/member/MemberDashboard';
 import { MemberWorkout } from './pages/member/MemberWorkout';
 import { MemberAttendance } from './pages/member/MemberAttendance';
+import { MemberProgress } from './pages/member/MemberProgress';
+import { ConfirmPurchase } from './pages/member/ConfirmPurchase';
 
 function App() {
   return (
@@ -72,6 +74,8 @@ function App() {
               <Route path="dashboard" element={<MemberDashboard />} />
               <Route path="workout" element={<MemberWorkout />} />
               <Route path="attendance" element={<MemberAttendance />} />
+              <Route path="progress" element={<MemberProgress />} />
+              <Route path="confirm-purchase" element={<ConfirmPurchase />} />
             </Route>
           </Routes>
         </BrowserRouter>

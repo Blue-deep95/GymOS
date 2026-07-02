@@ -7,6 +7,7 @@ const authRoutes = require('./routes/auth')
 const receptionistRoutes = require('./routes/receptionist')
 const trainerRoutes = require('./routes/trainer')
 const memberRoutes = require('./routes/member')
+const ownerRoutes = require('./routes/owner')
 
 const app = express()
 
@@ -40,6 +41,9 @@ app.use('/api/trainer', trainerRoutes)
 
 // Mount Member Routes
 app.use('/api/member', memberRoutes)
+
+// Mount Owner Routes
+app.use('/api/owner', ownerRoutes)
 
 
 app.listen(PORT , () => console.log("Server running on PORT --> "+ PORT))

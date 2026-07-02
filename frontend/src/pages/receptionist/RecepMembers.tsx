@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Box, Typography, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Chip, Select, MenuItem, FormControl, TextField, InputAdornment } from '@mui/material';
+import { Box, Typography, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Chip, Select, MenuItem, FormControl, TextField, InputAdornment, Button } from '@mui/material';
 import { useFetch, useMutation } from '../../hooks/useApi';
 import { useToast } from '../../context/ToastContext';
 
@@ -11,6 +11,18 @@ export const RecepMembers: React.FC = () => {
 
   const assignMembershipMutation = useMutation('', 'POST');
   const assignTrainerMutation = useMutation('', 'PATCH');
+  const freezeMutation = useMutation('', 'POST');
+
+  const handleFreeze = async (memberId: string) => {
+    try {
+      const url = `/api/receptionist/members/${memberId}/freeze`;
+      await freezeMutation.execute(null, { url });
+      showToast('Membership status toggled successfully', 'success');
+      refetch();
+    } catch (err: any) {
+      showToast(err.message || 'Failed to toggle freeze state', 'error');
+    }
+  };
 
   const members = membersData?.members || [];
   const trainers = trainersData?.trainers || [];
@@ -153,6 +165,24 @@ export const RecepMembers: React.FC = () => {
                         fontFamily: "'Manrope', sans-serif"
                       }}
                     />
+                    {member.currentMembership && (
+                      <Button
+                        size="small"
+                        onClick={() => handleFreeze(member._id)}
+                        sx={{
+                          display: 'block',
+                          mt: 1,
+                          p: 0,
+                          fontSize: '11px',
+                          textTransform: 'none',
+                          fontWeight: 700,
+                          color: '#1a1a1a',
+                          '&:hover': { textDecoration: 'underline', backgroundColor: 'transparent' }
+                        }}
+                      >
+                        {member.currentMembership.status === 'Frozen' ? '❄️ Unfreeze' : '❄️ Freeze Plan'}
+                      </Button>
+                    )}
                   </TableCell>
                   <TableCell>
                     <FormControl size="small" sx={{ minWidth: 160 }}>

@@ -1,13 +1,16 @@
 import React, { useState } from 'react';
-import { Box, Typography, Select, MenuItem, FormControl, TextField, InputAdornment, Accordion, AccordionSummary, AccordionDetails, Chip, Grid, Paper } from '@mui/material';
+import { Box, Typography, Select, MenuItem, FormControl, TextField, InputAdornment, Accordion, AccordionSummary, AccordionDetails, Chip, Grid, Paper, Button } from '@mui/material';
 import { useFetch, useMutation } from '../../hooks/useApi';
 import { useToast } from '../../context/ToastContext';
+import { AthleteConsole } from '../../components/AthleteConsole';
 
 export const TrainerMembers: React.FC = () => {
   const { showToast } = useToast();
   const { data: membersData, loading: membersLoading, error: membersError, refetch } = useFetch('/api/trainer/members');
   const { data: templatesData } = useFetch('/api/trainer/templates');
   const [search, setSearch] = useState('');
+  const [selectedMemberId, setSelectedMemberId] = useState<string | null>(null);
+  const [consoleOpen, setConsoleOpen] = useState(false);
 
   const assignProgramMutation = useMutation('', 'POST');
   const removeProgramMutation = useMutation('', 'DELETE');
@@ -132,7 +135,7 @@ export const TrainerMembers: React.FC = () => {
               {/* Header section of each member */}
               <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 2, mb: 3 }}>
                 <Box>
-                  <Typography variant="h6" sx={{ fontFamily: "'Manrope', sans-serif", fontWeight: 800, color: '#1a1a1a', display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                  <Typography variant="h6" onClick={() => { setSelectedMemberId(member._id); setConsoleOpen(true); }} sx={{ fontFamily: "'Manrope', sans-serif", fontWeight: 800, color: '#1a1a1a', display: 'flex', alignItems: 'center', gap: 1.5, cursor: 'pointer', '&:hover': { color: 'text.secondary' } }}>
                     {member.fullName}
                     <Chip
                       label={member.currentMembership?.status || 'No Package'}
@@ -146,9 +149,34 @@ export const TrainerMembers: React.FC = () => {
                       }}
                     />
                   </Typography>
-                  <Typography variant="caption" color="text.secondary">
+                  <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
                     Email: {member.email} | Phone: {member.phone || 'N/A'}
                   </Typography>
+                  <Button
+                    variant="text"
+                    size="small"
+                    onClick={() => {
+                      setSelectedMemberId(member._id);
+                      setConsoleOpen(true);
+                    }}
+                    sx={{
+                      p: 0,
+                      mt: 1.5,
+                      textTransform: 'none',
+                      fontWeight: 700,
+                      color: '#1a1a1a',
+                      fontSize: '13px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 0.5,
+                      '&:hover': {
+                        textDecoration: 'underline',
+                        backgroundColor: 'transparent'
+                      }
+                    }}
+                  >
+                    View Bio & Progress Timeline ➔
+                  </Button>
                 </Box>
 
                 {/* Dropdown to assign template */}
@@ -273,6 +301,12 @@ export const TrainerMembers: React.FC = () => {
           </Box>
         )}
       </Box>
+      <AthleteConsole
+        memberId={selectedMemberId}
+        open={consoleOpen}
+        onClose={() => setConsoleOpen(false)}
+        onLogged={refetch}
+      />
     </Box>
   );
 };

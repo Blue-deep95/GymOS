@@ -1,7 +1,18 @@
 import { Box, Typography, Button, Container } from '@mui/material';
 import { Link as RouterLink } from 'react-router';
+import { useAuth } from '../context/AuthContext';
 
 export const Hero = () => {
+  const { token, role } = useAuth();
+
+  const getDashboardLink = () => {
+    if (role === 'owner') return '/owner/dashboard';
+    if (role === 'receptionist') return '/receptionist/dashboard';
+    if (role === 'trainer') return '/trainer/dashboard';
+    if (role === 'user' || role === 'member') return '/member/dashboard';
+    return '/';
+  };
+
   return (
     <Box
       component="section"
@@ -41,29 +52,26 @@ export const Hero = () => {
           left: 0,
           width: '100%',
           height: '100%',
-          backgroundColor: 'rgba(0, 0, 0, 0.45)',
+          backgroundColor: 'rgba(0, 0, 0, 0.4)',
           zIndex: 2,
         }}
       />
 
       {/* Content Container */}
-      <Container
-        maxWidth="lg"
-        sx={{
-          position: 'relative',
-          zIndex: 3,
-          px: { xs: 2, md: 4 },
-        }}
-      >
-        <Box sx={{ maxWidth: '900px' }}>
+      <Container maxWidth="lg" sx={{ position: 'relative', zIndex: 3 }}>
+        <Box sx={{ maxWidth: '800px', textAlign: 'left' }}>
+          {/* Editorial Display Text */}
           <Typography
             variant="h1"
             sx={{
+              fontFamily: "'Suisse Intl', 'Manrope', sans-serif",
+              fontWeight: 900,
+              color: '#ffffff',
+              fontSize: { xs: '42px', sm: '55px', md: '72px' },
+              lineHeight: 1.05,
+              letterSpacing: '-2px',
               textTransform: 'uppercase',
               mb: 3,
-              fontWeight: 800,
-              color: '#ffffff', // Pure White for inverse layout
-              textShadow: '0 2px 4px rgba(0,0,0,0.1)',
             }}
           >
             A temple for strength.
@@ -74,9 +82,10 @@ export const Hero = () => {
           <Typography
             variant="body1"
             sx={{
-              color: '#e6e6e6', // Hairline color for high contrast secondary text
-              fontSize: { xs: '18px', md: '20px' },
-              lineHeight: 1.6,
+              fontFamily: "'Suisse Intl', 'Manrope', sans-serif",
+              fontSize: { xs: '15px', md: '18px' },
+              lineHeight: 1.4,
+              color: '#f2f2f2',
               mb: 5,
               maxWidth: '680px',
               textShadow: '0 1px 2px rgba(0,0,0,0.1)',
@@ -87,43 +96,67 @@ export const Hero = () => {
 
           {/* Overlay CTA Action Buttons */}
           <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
-            <Button
-              variant="contained"
-              component={RouterLink}
-              to="/signin"
-              sx={{
-                py: 2,
-                px: 4,
-                fontSize: '16px',
-                fontWeight: 600,
-                backgroundColor: '#ffffff', // Inverse solid button
-                color: '#1a1a1a',
-                '&:hover': {
-                  backgroundColor: '#f2f2f2',
-                },
-              }}
-            >
-              Sign In
-            </Button>
-            <Button
-              variant="outlined"
-              component={RouterLink}
-              to="/register"
-              sx={{
-                py: 2,
-                px: 4,
-                fontSize: '16px',
-                fontWeight: 600,
-                borderColor: '#ffffff', // Inverse outlined button
-                color: '#ffffff',
-                '&:hover': {
-                  borderColor: '#ffffff',
-                  backgroundColor: 'rgba(255, 255, 255, 0.1)',
-                },
-              }}
-            >
-              Contact Sales
-            </Button>
+            {token ? (
+              <Button
+                variant="contained"
+                component={RouterLink}
+                to={getDashboardLink()}
+                sx={{
+                  py: 2,
+                  px: 5,
+                  fontSize: '16px',
+                  fontWeight: 700,
+                  backgroundColor: '#fdf313', // Highlight dashboard with Electric Yellow
+                  color: '#1a1a1a',
+                  fontFamily: "'Manrope', sans-serif",
+                  '&:hover': {
+                    backgroundColor: '#e5dc10',
+                  },
+                }}
+              >
+                Control Lab
+              </Button>
+            ) : (
+              <>
+                <Button
+                  variant="contained"
+                  component={RouterLink}
+                  to="/signin"
+                  sx={{
+                    py: 2,
+                    px: 4,
+                    fontSize: '16px',
+                    fontWeight: 600,
+                    backgroundColor: '#ffffff', // Inverse solid button
+                    color: '#1a1a1a',
+                    '&:hover': {
+                      backgroundColor: '#f2f2f2',
+                    },
+                  }}
+                >
+                  Sign In
+                </Button>
+                <Button
+                  variant="outlined"
+                  component={RouterLink}
+                  to="/register"
+                  sx={{
+                    py: 2,
+                    px: 4,
+                    fontSize: '16px',
+                    fontWeight: 600,
+                    borderColor: '#ffffff', // Inverse outlined button
+                    color: '#ffffff',
+                    '&:hover': {
+                      borderColor: '#ffffff',
+                      backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                    },
+                  }}
+                >
+                  Register
+                </Button>
+              </>
+            )}
           </Box>
         </Box>
       </Container>

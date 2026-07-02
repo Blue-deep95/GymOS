@@ -11,7 +11,7 @@ services:
     
     volumes:
       - gym_data:/data/db
-      # the above is named volumes maybe ?
+      
   
   gym_backend:
     build: ./backend

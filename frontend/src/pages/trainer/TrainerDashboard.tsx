@@ -1,15 +1,19 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Box, Typography, Grid, Card, CardContent, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, List, ListItem, LinearProgress } from '@mui/material';
 import { useFetch } from '../../hooks/useApi';
+import { AthleteConsole } from '../../components/AthleteConsole';
 
 export const TrainerDashboard: React.FC = () => {
-  const { data, loading, error } = useFetch('/api/trainer/dashboard');
+  const { data, loading, error, refetch } = useFetch('/api/trainer/dashboard');
+  const [selectedMemberId, setSelectedMemberId] = useState<string | null>(null);
+  const [consoleOpen, setConsoleOpen] = useState(false);
 
   const stats = data || {
     assignedMembersCount: 0,
     recentAttendance: [],
     attendance30Days: [],
-    topAttending: []
+    topAttending: [],
+    needsUpdate: []
   };
 
   // Calculate total check-ins in the last 30 days
@@ -76,7 +80,67 @@ export const TrainerDashboard: React.FC = () => {
           </Card>
         </Grid>
       </Grid>
-
+      {/* Alert / Warning Row for Progress Updates */}
+      {stats.needsUpdate && stats.needsUpdate.length > 0 && (
+        <Card
+          elevation={0}
+          sx={{
+            border: '1px solid #e6e6e6',
+            borderLeft: '4px solid #fdf313',
+            borderRadius: '8px',
+            backgroundColor: '#ffffff',
+            mb: 5,
+            p: 3
+          }}
+        >
+          <Typography
+            variant="subtitle1"
+            sx={{ fontWeight: 800, color: '#1a1a1a', mb: 2, textTransform: 'uppercase', letterSpacing: '0.5px', display: 'flex', alignItems: 'center', gap: 1 }}
+          >
+            <span style={{ color: '#d32f2f', fontWeight: 900 }}>⚠️</span>
+            Attention: Progress Updates Required ({stats.needsUpdate.length})
+          </Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+            The following athletes have no measurement logs or have not had their measurements updated in over 30 days. Click their profile to log metrics.
+          </Typography>
+          <Grid container spacing={2}>
+            {stats.needsUpdate.map((m: any) => (
+              <Grid size={{ xs: 12, sm: 6, md: 4 }} key={m._id}>
+                <Box
+                  onClick={() => {
+                    setSelectedMemberId(m._id);
+                    setConsoleOpen(true);
+                  }}
+                  sx={{
+                    p: 2,
+                    border: '1px solid #e6e6e6',
+                    borderRadius: '8px',
+                    backgroundColor: '#fafafa',
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s ease',
+                    '&:hover': {
+                      borderColor: '#1a1a1a',
+                      backgroundColor: '#f2f2f2'
+                    }
+                  }}
+                >
+                  <Box>
+                    <Typography sx={{ fontWeight: 700, fontSize: '14px', color: '#1a1a1a' }}>
+                      {m.fullName}
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
+                      Last Log: {m.lastUpdated}
+                    </Typography>
+                  </Box>
+                </Box>
+              </Grid>
+            ))}
+          </Grid>
+        </Card>
+      )}
       {/* Main Aggregated Content Columns */}
       <Grid container spacing={4} sx={{ mb: 5 }}>
         {/* Left Column: 30-Day Check-in Trend list */}
@@ -231,6 +295,12 @@ export const TrainerDashboard: React.FC = () => {
           </Table>
         </TableContainer>
       </Box>
+      <AthleteConsole
+        memberId={selectedMemberId}
+        open={consoleOpen}
+        onClose={() => setConsoleOpen(false)}
+        onLogged={refetch}
+      />
     </Box>
   );
 };

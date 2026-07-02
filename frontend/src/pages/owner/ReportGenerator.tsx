@@ -1,40 +1,27 @@
 import React, { useState } from 'react';
 import { Box, Typography, Button, Grid, FormControl, InputLabel, Select, MenuItem, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow } from '@mui/material';
+import api from '../../api';
 
 export const ReportGenerator: React.FC = () => {
   const [reportType, setReportType] = useState('attendance');
   const [timeRange, setTimeRange] = useState('30d');
   const [reportData, setReportData] = useState<any[] | null>(null);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const handleGenerate = () => {
+  const handleGenerate = async () => {
     setLoading(true);
-    // Mimic API delay
-    setTimeout(() => {
-      if (reportType === 'attendance') {
-        setReportData([
-          { metric: 'Total Check-ins', value: '1,245 visits' },
-          { metric: 'Peak Attendance Hour', value: '06:00 PM - 08:00 PM' },
-          { metric: 'Most Active Day', value: 'Monday (284 visits avg)' },
-          { metric: 'Absentee Alert (>30 Days)', value: '14 members flagged' }
-        ]);
-      } else if (reportType === 'memberships') {
-        setReportData([
-          { metric: 'Total Revenue Active', value: '134 active packages' },
-          { metric: 'Expiring This Week', value: '12 members warning' },
-          { metric: 'New Registrations (Period)', value: '+28 signups' },
-          { metric: 'Churn Estimate Rate', value: '3.4% calculated' }
-        ]);
-      } else {
-        setReportData([
-          { metric: 'Marcus Aurelius workload', value: '22 active (optimal)' },
-          { metric: 'Serena Vance workload', value: '15 active (optimal)' },
-          { metric: 'Helena Rostov workload', value: '28 active (high)' },
-          { metric: 'Kaelen Thorne workload', value: '8 active (low)' }
-        ]);
+    setError(null);
+    try {
+      const response = await api.get(`/api/owner/reports?reportType=${reportType}&timeRange=${timeRange}`);
+      if (response && response.data && response.data.reportData) {
+        setReportData(response.data.reportData);
       }
+    } catch (err: any) {
+      setError(err.message || 'Failed to compile operational intelligence reports');
+    } finally {
       setLoading(false);
-    }, 800);
+    }
   };
 
   return (
@@ -110,6 +97,14 @@ export const ReportGenerator: React.FC = () => {
           </Grid>
         </Grid>
       </Paper>
+
+      {error && (
+        <Box sx={{ mb: 3, p: 2, border: '1px solid #d32f2f', borderRadius: '8px', backgroundColor: '#fde8e8' }}>
+          <Typography color="error" variant="body2" sx={{ fontWeight: 600 }}>
+            {error}
+          </Typography>
+        </Box>
+      )}
 
       {/* Report Output */}
       {reportData && (

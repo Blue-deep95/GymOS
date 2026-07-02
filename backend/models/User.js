@@ -39,6 +39,14 @@ const userSchema = new mongoose.Schema({
         type: String,
         trim: true
     },
+    specialization: {
+        type: String,
+        trim: true
+    },
+    availability: {
+        type: String,
+        trim: true
+    },
     assignedTrainer: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User'

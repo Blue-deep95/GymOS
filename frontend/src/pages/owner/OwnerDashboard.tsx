@@ -1,27 +1,31 @@
 import React from 'react';
 import { Box, Typography, Grid, Card, CardContent, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Chip } from '@mui/material';
-
-// Mock data for Owner Dashboard Metrics
-const METRICS = [
-  { label: 'Active Members', value: '142', change: '+12% this month', status: 'normal' },
-  { label: 'Expired Memberships', value: '8', change: 'Action required', status: 'warning' },
-  { label: 'Today\'s Attendance', value: '45', change: '12 active sessions now', status: 'normal' },
-  { label: 'New Members (Monthly)', value: '24', change: 'Target: 30', status: 'normal' },
-];
-
-const TRAINERS = [
-  { name: 'Marcus Aurelius', specialization: 'Strength & Conditioning', clientCount: 22, load: 'Optimal' },
-  { name: 'Serena Vance', specialization: 'Cardiovascular Athletics', clientCount: 15, load: 'Optimal' },
-  { name: 'Helena Rostov', specialization: 'Postural Rehabilitation', clientCount: 28, load: 'High' },
-  { name: 'Kaelen Thorne', specialization: 'Calisthenics & Mobility', clientCount: 8, load: 'Low' },
-];
-
-// Mock daily check-ins for the last 30 days (percentages for visual bar representation)
-const ATTENDANCE_TREND = [
-  40, 45, 55, 60, 30, 20, 65, 70, 75, 80, 50, 45, 60, 72, 85, 90, 40, 35, 58, 62, 70, 78, 30, 25, 60, 68, 74, 82, 88, 95
-];
+import { useFetch } from '../../hooks/useApi';
 
 export const OwnerDashboard: React.FC = () => {
+  const { data, loading, error } = useFetch('/api/owner/dashboard');
+
+  const stats = data || {
+    activeMembersCount: 0,
+    expiredMembersCount: 0,
+    todayCheckinsCount: 0,
+    newMembersThisMonthCount: 0,
+    trainerWorkload: [],
+    attendanceTrend: []
+  };
+
+  const metrics = [
+    { label: 'Active Members', value: loading ? '...' : stats.activeMembersCount.toString(), change: 'Holding active contracts', status: 'normal' },
+    { label: 'Expired Memberships', value: loading ? '...' : stats.expiredMembersCount.toString(), change: stats.expiredMembersCount > 0 ? 'Requires renewal action' : 'All contracts up to date', status: stats.expiredMembersCount > 0 ? 'warning' : 'normal' },
+    { label: 'Today\'s Attendance', value: loading ? '...' : stats.todayCheckinsCount.toString(), change: 'Live check-in counter', status: 'normal' },
+    { label: 'New Members (Monthly)', value: loading ? '...' : stats.newMembersThisMonthCount.toString(), change: 'Registrations this month', status: 'normal' },
+  ];
+
+  // Find max value in attendance trend to scale bars to 100% height
+  const maxTrendVal = stats.attendanceTrend && stats.attendanceTrend.length > 0
+    ? Math.max(...stats.attendanceTrend, 1)
+    : 1;
+
   return (
     <Box sx={{ flexGrow: 1 }}>
       {/* Editorial Header */}
@@ -44,9 +48,17 @@ export const OwnerDashboard: React.FC = () => {
         </Typography>
       </Box>
 
+      {error && (
+        <Box sx={{ mb: 3 }}>
+          <Typography color="error" variant="body2" sx={{ fontWeight: 600 }}>
+            {error}
+          </Typography>
+        </Box>
+      )}
+
       {/* Metrics Grid */}
       <Grid container spacing={3} sx={{ mb: 6 }}>
-        {METRICS.map((metric, i) => (
+        {metrics.map((metric, i) => (
           <Grid size={{ xs: 12, sm: 6, md: 3 }} key={i}>
             <Card
               elevation={0}
@@ -142,7 +154,7 @@ export const OwnerDashboard: React.FC = () => {
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {TRAINERS.map((trainer) => (
+                  {stats.trainerWorkload && stats.trainerWorkload.map((trainer: any) => (
                     <TableRow
                       key={trainer.name}
                       sx={{
@@ -173,6 +185,13 @@ export const OwnerDashboard: React.FC = () => {
                       </TableCell>
                     </TableRow>
                   ))}
+                  {(!stats.trainerWorkload || stats.trainerWorkload.length === 0) && (
+                    <TableRow>
+                      <TableCell colSpan={4} align="center" sx={{ py: 4, color: '#949494' }}>
+                        {loading ? 'Compiling trainer registry...' : 'No trainers registered.'}
+                      </TableCell>
+                    </TableRow>
+                  )}
                 </TableBody>
               </Table>
             </TableContainer>
@@ -201,23 +220,26 @@ export const OwnerDashboard: React.FC = () => {
                 borderBottom: '1px solid #1a1a1a'
               }}
             >
-              {ATTENDANCE_TREND.map((val, i) => (
-                <Box
-                  key={i}
-                  sx={{
-                    width: `${90 / ATTENDANCE_TREND.length}%`,
-                    height: `${val}%`,
-                    backgroundColor: i === ATTENDANCE_TREND.length - 1 ? '#fdf313' : '#1a1a1a', // Highlight last day with Electric Yellow
-                    borderRadius: '1px',
-                    transition: 'all 0.3s ease',
-                    '&:hover': {
-                      backgroundColor: '#fdf313',
-                      transform: 'scaleY(1.05)'
-                    }
-                  }}
-                  title={`Day ${i + 1}: ${val}% capacity`}
-                />
-              ))}
+              {stats.attendanceTrend && stats.attendanceTrend.map((val: number, i: number) => {
+                const scaledHeight = Math.min((val / maxTrendVal) * 100, 100);
+                return (
+                  <Box
+                    key={i}
+                    sx={{
+                      width: `${90 / stats.attendanceTrend.length}%`,
+                      height: `${scaledHeight}%`,
+                      backgroundColor: i === stats.attendanceTrend.length - 1 ? '#fdf313' : '#1a1a1a', // Highlight last day with Electric Yellow
+                      borderRadius: '1px',
+                      transition: 'all 0.3s ease',
+                      '&:hover': {
+                        backgroundColor: '#fdf313',
+                        transform: 'scaleY(1.05)'
+                      }
+                    }}
+                    title={`Day ${i + 1}: ${val} check-ins`}
+                  />
+                );
+              })}
             </Box>
             
             <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 1 }}>

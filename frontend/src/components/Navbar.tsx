@@ -103,13 +103,13 @@ export const Navbar = () => {
                 textDecoration: 'none'
               }}
             >
-              A/
+              S/
               <Box
                 component="span"
                 sx={{
                   fontFamily: "'Inter', sans-serif",
-                  fontWeight: 400,
-                  fontSize: '14px',
+                  fontWeight: 900,
+                  fontSize: '16px',
                   color: 'text.secondary',
                   ml: 1.5,
                   letterSpacing: '0.1em',

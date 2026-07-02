@@ -1,23 +1,32 @@
 import React, { useState } from 'react';
-import { Box, Typography, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Chip, TextField, InputAdornment } from '@mui/material';
-
-// Mock members data
-const INITIAL_MEMBERS = [
-  { id: '1', fullName: 'Dorian Yates', email: 'dorian@shadow.com', phone: '555-0101', status: 'Active', trainer: 'Marcus Aurelius', goals: 'Hypertrophy & Power' },
-  { id: '2', fullName: 'Lenda Murray', email: 'lenda@msolympia.com', phone: '555-0102', status: 'Active', trainer: 'Helena Rostov', goals: 'Championship Conditioning' },
-  { id: '3', fullName: 'Frank Zane', email: 'frank@aesthetic.com', phone: '555-0103', status: 'Frozen', trainer: 'Kaelen Thorne', goals: 'Symmetry & Mobility' },
-  { id: '4', fullName: 'Arnold S.', email: 'arnold@gold.com', phone: '555-0104', status: 'Expired', trainer: 'Marcus Aurelius', goals: 'Volume Training' },
-  { id: '5', fullName: 'Franco Columbu', email: 'franco@power.com', phone: '555-0105', status: 'Inactive', trainer: 'None', goals: 'Powerlifting Base' },
-  { id: '6', fullName: 'Cory Everson', email: 'cory@conditioning.com', phone: '555-0106', status: 'Active', trainer: 'Serena Vance', goals: 'Cardiovascular Athletics' },
-];
+import { Box, Typography, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Chip, TextField, InputAdornment, Button } from '@mui/material';
+import { useFetch, useMutation } from '../../hooks/useApi';
+import { useToast } from '../../context/ToastContext';
 
 export const MembersList: React.FC = () => {
+  const { showToast } = useToast();
+  const { data, loading, error, refetch } = useFetch('/api/owner/members');
   const [search, setSearch] = useState('');
 
-  const filteredMembers = INITIAL_MEMBERS.filter(member => 
+  const freezeMutation = useMutation('', 'POST');
+
+  const handleFreeze = async (memberId: string) => {
+    try {
+      const url = `/api/receptionist/members/${memberId}/freeze`;
+      await freezeMutation.execute(null, { url });
+      showToast('Membership status toggled successfully', 'success');
+      refetch();
+    } catch (err: any) {
+      showToast(err.message || 'Failed to toggle freeze state', 'error');
+    }
+  };
+
+  const members = data?.members || [];
+
+  const filteredMembers = members.filter((member: any) => 
     member.fullName.toLowerCase().includes(search.toLowerCase()) ||
     member.email.toLowerCase().includes(search.toLowerCase()) ||
-    member.trainer.toLowerCase().includes(search.toLowerCase())
+    (member.assignedTrainer?.fullName || 'None').toLowerCase().includes(search.toLowerCase())
   );
 
   const getStatusColor = (status: string) => {
@@ -54,6 +63,14 @@ export const MembersList: React.FC = () => {
           </Typography>
         </Box>
       </Box>
+
+      {error && (
+        <Box sx={{ mb: 3 }}>
+          <Typography color="error" variant="body2" sx={{ fontWeight: 600 }}>
+            {error}
+          </Typography>
+        </Box>
+      )}
 
       {/* Filter Toolbar */}
       <Box sx={{ mb: 4, display: 'flex', gap: 2 }}>
@@ -99,11 +116,12 @@ export const MembersList: React.FC = () => {
             </TableRow>
           </TableHead>
           <TableBody>
-            {filteredMembers.map((member) => {
-              const statusColors = getStatusColor(member.status);
+            {filteredMembers.map((member: any) => {
+              const status = member.currentMembership?.status || 'No Package';
+              const statusColors = getStatusColor(status);
               return (
                 <TableRow
-                  key={member.id}
+                  key={member._id}
                   sx={{
                     borderBottom: '1px solid #e6e6e6',
                     '&:hover': { backgroundColor: '#f2f2f2' }
@@ -113,10 +131,10 @@ export const MembersList: React.FC = () => {
                     {member.fullName}
                   </TableCell>
                   <TableCell sx={{ color: '#757575' }}>{member.email}</TableCell>
-                  <TableCell sx={{ color: '#757575' }}>{member.phone}</TableCell>
+                  <TableCell sx={{ color: '#757575' }}>{member.phone || 'N/A'}</TableCell>
                   <TableCell>
                     <Chip
-                      label={member.status}
+                      label={status}
                       size="small"
                       sx={{
                         backgroundColor: statusColors.bg,
@@ -127,16 +145,36 @@ export const MembersList: React.FC = () => {
                         fontFamily: "'Manrope', sans-serif"
                       }}
                     />
+                    {member.currentMembership && (
+                      <Button
+                        size="small"
+                        onClick={() => handleFreeze(member._id)}
+                        sx={{
+                          display: 'block',
+                          mt: 1,
+                          p: 0,
+                          fontSize: '11px',
+                          textTransform: 'none',
+                          fontWeight: 700,
+                          color: '#1a1a1a',
+                          '&:hover': { textDecoration: 'underline', backgroundColor: 'transparent' }
+                        }}
+                      >
+                        {status === 'Frozen' ? '❄️ Unfreeze' : '❄️ Freeze Plan'}
+                      </Button>
+                    )}
                   </TableCell>
-                  <TableCell sx={{ fontWeight: 600, color: '#1a1a1a' }}>{member.trainer}</TableCell>
-                  <TableCell sx={{ color: '#757575' }}>{member.goals}</TableCell>
+                  <TableCell sx={{ fontWeight: 600, color: '#1a1a1a' }}>
+                    {member.assignedTrainer?.fullName || 'None'}
+                  </TableCell>
+                  <TableCell sx={{ color: '#757575' }}>{member.fitnessGoals || 'None'}</TableCell>
                 </TableRow>
               );
             })}
             {filteredMembers.length === 0 && (
               <TableRow>
                 <TableCell colSpan={6} align="center" sx={{ py: 6, color: '#949494' }}>
-                  No members match the query parameters.
+                  {loading ? 'Fetching member directory...' : 'No members match the query parameters.'}
                 </TableCell>
               </TableRow>
             )}
@@ -146,3 +184,4 @@ export const MembersList: React.FC = () => {
     </Box>
   );
 };
+export default MembersList;

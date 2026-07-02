@@ -10,5 +10,7 @@ router.use(authorizeRoles('user', 'member'));
 
 // Member Dashboard Metrics
 router.get('/dashboard', memberController.getDashboardData);
+router.get('/progress', memberController.getProgressHistory);
+router.post('/purchase', memberController.purchaseMembership);
 
 module.exports = router;

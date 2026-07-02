@@ -178,10 +178,48 @@ const getTrainersList = async (req, res) => {
     }
 };
 
+/**
+ * Freeze or unfreeze a member's current membership status.
+ */
+const freezeMembership = async (req, res) => {
+    try {
+        const memberId = req.params.id;
+
+        // Verify member exists
+        const member = await User.findById(memberId);
+        if (!member) {
+            return res.status(404).json({ message: 'Member not found' });
+        }
+
+        if (!member.currentMembership) {
+            return res.status(400).json({ message: 'Member has no active membership plan to freeze' });
+        }
+
+        const membership = await Membership.findById(member.currentMembership);
+        if (!membership) {
+            return res.status(404).json({ message: 'Membership record not found' });
+        }
+
+        // Toggle state
+        const originalStatus = membership.status;
+        const newStatus = originalStatus === 'Frozen' ? 'Active' : 'Frozen';
+        membership.status = newStatus;
+        await membership.save();
+
+        res.status(200).json({
+            message: `Membership status updated from ${originalStatus} to ${newStatus}`,
+            membership
+        });
+    } catch (err) {
+        res.status(500).json({ message: 'Error updating membership status', error: err.message });
+    }
+};
+
 module.exports = {
     getMembersList,
     assignMembership,
     assignTrainer,
     checkInMember,
-    getTrainersList
+    getTrainersList,
+    freezeMembership
 };

@@ -39,6 +39,7 @@ export const MemberLayout: React.FC = () => {
     { label: 'Overview', path: '/member/dashboard' },
     { label: 'My Workout Plan', path: '/member/workout' },
     { label: 'My Attendance', path: '/member/attendance' },
+    { label: 'My Progress', path: '/member/progress' },
   ];
 
   return (
@@ -56,7 +57,7 @@ export const MemberLayout: React.FC = () => {
               lineHeight: 1.2
             }}
           >
-            A/ gymOS
+            S/ gymOS
           </Typography>
           <Typography variant="caption" color="text.secondary" sx={{ letterSpacing: '1px', textTransform: 'uppercase', fontWeight: 600 }}>
             Member Portal

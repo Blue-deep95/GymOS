@@ -82,7 +82,7 @@ export const SignIn = () => {
                 letterSpacing: '-1.5px',
               }}
             >
-              A/ gymOS
+              S/ gymOS
             </Typography>
           </Box>
         </Grid>
@@ -115,7 +115,7 @@ export const SignIn = () => {
                   textDecoration: 'none',
                 }}
               >
-                A/ gymOS
+                S/ gymOS
               </MuiLink>
               
               <Typography

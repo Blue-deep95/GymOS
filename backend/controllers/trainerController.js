@@ -2,6 +2,7 @@ const User = require('../models/User');
 const Attendance = require('../models/Attendance');
 const WorkoutTemplate = require('../models/WorkoutTemplate');
 const AssignedProgram = require('../models/AssignedProgram');
+const Measurement = require('../models/Measurement');
 
 /**
  * Fetch overview stats for the trainer dashboard.
@@ -13,9 +14,33 @@ const getDashboardStats = async (req, res) => {
         // Count assigned members
         const assignedMembersCount = await User.countDocuments({ assignedTrainer: trainerId });
 
-        // Get list of assigned member IDs
-        const members = await User.find({ assignedTrainer: trainerId }).select('_id');
+        // Get list of assigned member details
+        const members = await User.find({ assignedTrainer: trainerId }).select('fullName email');
         const memberIds = members.map(m => m._id);
+
+        // Compute members needing progress updates (no measurements or latest > 30 days ago)
+        const needsUpdate = [];
+        const thirtyDaysAgo = new Date();
+        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+        for (const m of members) {
+            const latest = await Measurement.findOne({ memberId: m._id }).sort({ recordedAt: -1 });
+            if (!latest) {
+                needsUpdate.push({
+                    _id: m._id,
+                    fullName: m.fullName,
+                    email: m.email,
+                    lastUpdated: 'Never'
+                });
+            } else if (latest.recordedAt < thirtyDaysAgo) {
+                needsUpdate.push({
+                    _id: m._id,
+                    fullName: m.fullName,
+                    email: m.email,
+                    lastUpdated: latest.recordedAt.toLocaleDateString()
+                });
+            }
+        }
 
         // Fetch recent attendance for these members
         const recentAttendance = await Attendance.find({ memberId: { $in: memberIds } })
@@ -81,7 +106,8 @@ const getDashboardStats = async (req, res) => {
             assignedMembersCount,
             recentAttendance,
             attendance30Days,
-            topAttending
+            topAttending,
+            needsUpdate
         });
     } catch (err) {
         res.status(500).json({ message: 'Error retrieving trainer stats', error: err.message });
@@ -259,6 +285,113 @@ const removeProgram = async (req, res) => {
     }
 };
 
+/**
+ * Record a new progress measurement log for a member.
+ */
+const recordProgress = async (req, res) => {
+    try {
+        const trainerId = req.user.id;
+        const memberId = req.params.id;
+        const { weight, bodyFat, chest, waist, arms, thighs, notes } = req.body;
+
+        // Verify member exists and is assigned to this trainer
+        const member = await User.findById(memberId);
+        if (!member) {
+            return res.status(404).json({ message: 'Member not found' });
+        }
+        if (member.assignedTrainer && member.assignedTrainer.toString() !== trainerId) {
+            return res.status(403).json({ message: 'This member is not assigned to you' });
+        }
+
+        const newMeasurement = new Measurement({
+            memberId,
+            recordedBy: trainerId,
+            weight,
+            bodyFat,
+            chest,
+            waist,
+            arms,
+            thighs,
+            notes
+        });
+
+        await newMeasurement.save();
+
+        res.status(201).json({
+            message: 'Measurements recorded successfully',
+            measurement: newMeasurement
+        });
+    } catch (err) {
+        res.status(500).json({ message: 'Error recording member progress metrics', error: err.message });
+    }
+};
+
+/**
+ * Retrieve progress measurement logs history for a member.
+ */
+const getProgressHistory = async (req, res) => {
+    try {
+        const trainerId = req.user.id;
+        const memberId = req.params.id;
+
+        // Verify member exists and is assigned to this trainer
+        const member = await User.findById(memberId);
+        if (!member) {
+            return res.status(404).json({ message: 'Member not found' });
+        }
+        if (member.assignedTrainer && member.assignedTrainer.toString() !== trainerId) {
+            return res.status(403).json({ message: 'This member is not assigned to you' });
+        }
+
+        const progressHistory = await Measurement.find({ memberId })
+            .sort({ recordedAt: -1 });
+
+        res.status(200).json({ progressHistory });
+    } catch (err) {
+        res.status(500).json({ message: 'Error fetching progress logs', error: err.message });
+    }
+};
+
+/**
+ * Consolidated member detail profile (medical, goals, active routine, attendance, and measurements).
+ */
+const getMemberProfileDetail = async (req, res) => {
+    try {
+        const trainerId = req.user.id;
+        const memberId = req.params.id;
+
+        // Verify member exists and is assigned to this trainer
+        const member = await User.findById(memberId)
+            .select('-password')
+            .populate('currentMembership');
+
+        if (!member) {
+            return res.status(404).json({ message: 'Member not found' });
+        }
+        if (member.assignedTrainer && member.assignedTrainer.toString() !== trainerId) {
+            return res.status(403).json({ message: 'This member is not assigned to you' });
+        }
+
+        // Fetch active program
+        const activeProgram = await AssignedProgram.findOne({ memberId }).sort({ assignedAt: -1 });
+
+        // Fetch attendance logs
+        const attendance = await Attendance.find({ memberId }).sort({ checkInTime: -1 }).limit(15);
+
+        // Fetch progress history
+        const progressHistory = await Measurement.find({ memberId }).sort({ recordedAt: -1 });
+
+        res.status(200).json({
+            member,
+            activeProgram,
+            attendance,
+            progressHistory
+        });
+    } catch (err) {
+        res.status(500).json({ message: 'Error compiling athlete bio dossier', error: err.message });
+    }
+};
+
 module.exports = {
     getDashboardStats,
     getAssignedMembers,
@@ -266,5 +399,8 @@ module.exports = {
     getWorkoutTemplates,
     createWorkoutTemplate,
     deleteWorkoutTemplate,
-    removeProgram
+    removeProgram,
+    recordProgress,
+    getProgressHistory,
+    getMemberProfileDetail
 };
