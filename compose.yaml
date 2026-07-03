@@ -20,6 +20,8 @@ services:
       - "8080:8080"
     depends_on: 
       - gym_mongo
+    env_file:
+      - ./backend/.env
     volumes:
       - ./backend:/app
       - /app/node_modules

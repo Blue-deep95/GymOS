@@ -26,6 +26,14 @@ const membershipSchema = new mongoose.Schema({
     },
     price: {
         type: Number
+    },
+    freezeHistory: [{
+        frozenAt: { type: Date, required: true },
+        unfrozenAt: { type: Date }
+    }],
+    totalFrozenDays: {
+        type: Number,
+        default: 0
     }
 }, {
     timestamps: true

@@ -3,7 +3,7 @@
 const mongoose = require('mongoose')
 
 async function connectMongoDB() {
-    const mongoURI = process.env.MONGO_URI || "mongodb://admin:admin123@gym_mongo:27017/gymOS?authSource=admin";
+    const mongoURI = process.env.MONGO_ATLAS_URI || process.env.MONGO_ATlAS_URI || process.env.MONGO_URI;
     try {
         await mongoose.connect(mongoURI);
         console.log("MongoDB connected successfully to:", mongoURI.replace(/:[^:@/]+@/, ':****@'));

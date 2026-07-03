@@ -2,12 +2,22 @@ import React, { useState } from 'react';
 import { Box, Typography, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Chip, Select, MenuItem, FormControl, TextField, InputAdornment, Button } from '@mui/material';
 import { useFetch, useMutation } from '../../hooks/useApi';
 import { useToast } from '../../context/ToastContext';
+import { MembershipHistoryConsole } from '../../components/MembershipHistoryConsole';
 
 export const RecepMembers: React.FC = () => {
   const { showToast } = useToast();
   const { data: membersData, loading: membersLoading, error: membersError, refetch } = useFetch('/api/receptionist/members');
   const { data: trainersData } = useFetch('/api/receptionist/trainers');
   const [search, setSearch] = useState('');
+  const [historyOpen, setHistoryOpen] = useState(false);
+  const [historyMemberId, setHistoryMemberId] = useState<string | null>(null);
+  const [historyMemberName, setHistoryMemberName] = useState('');
+
+  const handleOpenHistory = (memberId: string, memberName: string) => {
+    setHistoryMemberId(memberId);
+    setHistoryMemberName(memberName);
+    setHistoryOpen(true);
+  };
 
   const assignMembershipMutation = useMutation('', 'POST');
   const assignTrainerMutation = useMutation('', 'PATCH');
@@ -149,8 +159,27 @@ export const RecepMembers: React.FC = () => {
                   }}
                 >
                   <TableCell component="th" scope="row">
-                    <Typography sx={{ fontWeight: 600, color: '#1a1a1a' }}>{member.fullName}</Typography>
-                    <Typography variant="caption" color="text.secondary">{member.email}</Typography>
+                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1 }}>
+                      <Box>
+                        <Typography sx={{ fontWeight: 600, color: '#1a1a1a' }}>{member.fullName}</Typography>
+                        <Typography variant="caption" color="text.secondary">{member.email}</Typography>
+                      </Box>
+                      <Button
+                        size="small"
+                        onClick={() => handleOpenHistory(member._id, member.fullName)}
+                        sx={{
+                          p: 0,
+                          fontSize: '11px',
+                          textTransform: 'none',
+                          fontWeight: 700,
+                          color: '#757575',
+                          minWidth: 'auto',
+                          '&:hover': { color: '#1a1a1a', backgroundColor: 'transparent', textDecoration: 'underline' }
+                        }}
+                      >
+                        📜 History
+                      </Button>
+                    </Box>
                   </TableCell>
                   <TableCell>
                     <Chip
@@ -244,6 +273,13 @@ export const RecepMembers: React.FC = () => {
           </TableBody>
         </Table>
       </TableContainer>
+
+      <MembershipHistoryConsole
+        memberId={historyMemberId}
+        memberName={historyMemberName}
+        open={historyOpen}
+        onClose={() => setHistoryOpen(false)}
+      />
     </Box>
   );
 };

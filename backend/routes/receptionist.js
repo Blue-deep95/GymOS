@@ -12,6 +12,7 @@ router.use(authorizeRoles('receptionist', 'owner'));
 router.get('/members', receptionistController.getMembersList);
 router.post('/members/:id/membership', receptionistController.assignMembership);
 router.post('/members/:id/freeze', receptionistController.freezeMembership);
+router.get('/members/:id/memberships', receptionistController.getMemberMembershipHistory);
 router.patch('/members/:id/assign-trainer', receptionistController.assignTrainer);
 router.get('/trainers', receptionistController.getTrainersList);
 

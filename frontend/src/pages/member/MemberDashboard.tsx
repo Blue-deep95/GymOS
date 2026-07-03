@@ -1,8 +1,10 @@
-import React from 'react';
-import { Box, Typography, Grid, Card, CardContent, Divider, List, ListItem } from '@mui/material';
+import React, { useState } from 'react';
+import { Box, Typography, Grid, Card, CardContent, Divider, List, ListItem, Button } from '@mui/material';
 import { useFetch } from '../../hooks/useApi';
+import { MembershipHistoryConsole } from '../../components/MembershipHistoryConsole';
 
 export const MemberDashboard: React.FC = () => {
+  const [historyOpen, setHistoryOpen] = useState(false);
   const { data, loading, error } = useFetch('/api/member/dashboard');
 
   if (loading) {
@@ -72,6 +74,25 @@ export const MemberDashboard: React.FC = () => {
                 <Typography variant="body2" color="text.secondary">
                   Please contact the front desk receptionist to activate your access profile.
                 </Typography>
+              )}
+              {member && (
+                <Box sx={{ mt: 3 }}>
+                  <Button
+                    variant="outlined"
+                    fullWidth
+                    onClick={() => setHistoryOpen(true)}
+                    sx={{
+                      borderColor: '#e6e6e6',
+                      color: '#1a1a1a',
+                      textTransform: 'none',
+                      fontWeight: 700,
+                      borderRadius: '6px',
+                      '&:hover': { borderColor: '#1a1a1a', backgroundColor: '#f2f2f2' }
+                    }}
+                  >
+                    📜 View Membership Purchase Ledger
+                  </Button>
+                </Box>
               )}
             </CardContent>
           </Card>
@@ -186,6 +207,13 @@ export const MemberDashboard: React.FC = () => {
           )}
         </Grid>
       </Grid>
+
+      <MembershipHistoryConsole
+        memberId={member?._id || null}
+        memberName={member?.fullName || ''}
+        open={historyOpen}
+        onClose={() => setHistoryOpen(false)}
+      />
     </Box>
   );
 };

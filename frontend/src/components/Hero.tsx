@@ -91,7 +91,7 @@ export const Hero = () => {
               textShadow: '0 1px 2px rgba(0,0,0,0.1)',
             }}
           >
-            Welcome to gymOS, a state-of-the-art physical laboratory engineered for performance. We provide serious athletes and fitness pursuers with premium equipment, custom coaching scripts, and digital metric tracking. Zero hype. 100% execution.
+            Welcome to S/, a state-of-the-art physical laboratory engineered for performance. We provide serious athletes and fitness pursuers with premium equipment, custom coaching scripts, and digital metric tracking. Zero hype. 100% execution.
           </Typography>
 
           {/* Overlay CTA Action Buttons */}

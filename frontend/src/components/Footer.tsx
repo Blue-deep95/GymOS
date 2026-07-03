@@ -27,7 +27,7 @@ export const Footer = () => {
                 mb: 2,
               }}
             >
-              A/
+              S/
             </Typography>
             <Typography
               variant="body2"

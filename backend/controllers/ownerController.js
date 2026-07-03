@@ -90,10 +90,9 @@ const getDashboardStats = async (req, res) => {
 
 /**
  * Compile analytics reports on attendance, memberships, and trainers capacity.
- */
-const getReportsData = async (req, res) => {
+ */const getReportsData = async (req, res) => {
     try {
-        const { reportType, timeRange } = req.query;
+        const { reportType, timeRange, trainerId, planType } = req.query;
 
         // Compute date filter boundary
         const limitDate = new Date();
@@ -101,23 +100,81 @@ const getReportsData = async (req, res) => {
         limitDate.setDate(limitDate.getDate() - days);
         const limitDateStr = limitDate.toISOString().split('T')[0];
 
-        if (reportType === 'attendance') {
-            // Aggregate check-ins
-            const totalCheckins = await Attendance.countDocuments({ date: { $gte: limitDateStr } });
+        // Resolve matching memberIds if filtering is applied
+        let memberIds = null;
+        if (trainerId || planType) {
+            let memberFilter = { role: { $in: ['member', 'user'] } };
+            if (trainerId) {
+                memberFilter.assignedTrainer = trainerId;
+            }
+            if (planType) {
+                // Find all memberships matching the planType
+                const memberships = await Membership.find({ planType });
+                const memberIdsWithPlan = memberships.map(m => m.memberId);
+                memberFilter._id = { $in: memberIdsWithPlan };
+            }
+            const matchingMembers = await User.find(memberFilter).select('_id');
+            memberIds = matchingMembers.map(m => m._id);
+        }
 
-            // Mock peak hours & active days for display (replaces static values with semi-dynamic based on check-ins)
+        if (reportType === 'attendance') {
+            // Aggregate check-ins count
+            const attendanceQuery = { date: { $gte: limitDateStr } };
+            if (memberIds !== null) {
+                attendanceQuery.memberId = { $in: memberIds };
+            }
+
+            const totalCheckins = await Attendance.countDocuments(attendanceQuery);
             const peakHour = totalCheckins > 0 ? '06:00 PM - 08:00 PM' : 'N/A';
-            const activeDay = totalCheckins > 0 ? 'Monday (Avg Check-ins)' : 'N/A';
+            const activeDay = totalCheckins > 0 ? 'Monday' : 'N/A';
 
             // Find absentees: members with no check-in logs in past 30 days
             const thirtyDaysAgo = new Date();
             thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
             const activeMemberIds = await Attendance.distinct('memberId', { date: { $gte: thirtyDaysAgo.toISOString().split('T')[0] } });
             
-            const absentCount = await User.countDocuments({
+            let absenteeQuery = {
                 role: { $in: ['member', 'user'] },
                 _id: { $nin: activeMemberIds }
-            });
+            };
+            if (trainerId) {
+                absenteeQuery.assignedTrainer = trainerId;
+            }
+            if (planType) {
+                const memberships = await Membership.find({ planType });
+                const memberIdsWithPlan = memberships.map(m => m.memberId);
+                absenteeQuery._id = { ...absenteeQuery._id, $in: memberIdsWithPlan };
+            }
+
+            const absentCount = await User.countDocuments(absenteeQuery);
+
+            // Fetch detailed list of top active members
+            const activeAgg = await Attendance.aggregate([
+                { $match: attendanceQuery },
+                { $group: { _id: '$memberId', count: { $sum: 1 } } },
+                { $sort: { count: -1 } },
+                { $limit: 5 }
+            ]);
+
+            const activeMembersDetailed = await Promise.all(activeAgg.map(async (item) => {
+                const user = await User.findById(item._id).select('fullName email');
+                return {
+                    fullName: user ? user.fullName : 'Unknown Member',
+                    email: user ? user.email : 'N/A',
+                    checkinCount: item.count
+                };
+            }));
+
+            // Fetch detailed list of absent members
+            const absenteesDetailedDocs = await User.find(absenteeQuery)
+                .select('fullName email lastActive')
+                .limit(5);
+
+            const absenteesDetailed = absenteesDetailedDocs.map(user => ({
+                fullName: user.fullName,
+                email: user.email,
+                lastActive: user.lastActive ? new Date(user.lastActive).toLocaleDateString() : 'Never'
+            }));
 
             res.status(200).json({
                 reportData: [
@@ -125,31 +182,60 @@ const getReportsData = async (req, res) => {
                     { metric: 'Peak Attendance Hour', value: peakHour },
                     { metric: 'Most Active Day', value: activeDay },
                     { metric: 'Absentee Alert (>30 Days)', value: `${absentCount} members flagged` }
-                ]
+                ],
+                activeMembersDetailed,
+                absenteesDetailed
             });
 
         } else if (reportType === 'memberships') {
-            const activeCount = await Membership.countDocuments({ status: 'Active' });
+            let membershipQuery = { status: 'Active' };
+            if (planType) {
+                membershipQuery.planType = planType;
+            }
+            if (trainerId) {
+                if (memberIds === null) {
+                    const matchingMembers = await User.find({ role: { $in: ['member', 'user'] }, assignedTrainer: trainerId }).select('_id');
+                    memberIds = matchingMembers.map(m => m._id);
+                }
+                membershipQuery.memberId = { $in: memberIds };
+            }
+
+            const activeCount = await Membership.countDocuments(membershipQuery);
 
             // Expiring in next 7 days
             const oneWeekLater = new Date();
             oneWeekLater.setDate(oneWeekLater.getDate() + 7);
-            const expiringCount = await Membership.countDocuments({
-                status: 'Active',
+            const expiringQuery = {
+                ...membershipQuery,
                 endDate: { $lte: oneWeekLater }
-            });
+            };
+            const expiringCount = await Membership.countDocuments(expiringQuery);
 
             // New registrations in range
-            const newRegistrations = await Membership.countDocuments({
+            const newRegQuery = {
+                ...membershipQuery,
                 startDate: { $gte: limitDate }
-            });
+            };
+            const newRegistrations = await Membership.countDocuments(newRegQuery);
 
             // Estimated revenue
             const revenueSum = await Membership.aggregate([
-                { $match: { status: 'Active' } },
+                { $match: membershipQuery },
                 { $group: { _id: null, total: { $sum: '$price' } } }
             ]);
             const revenue = revenueSum[0]?.total || 0;
+
+            // Fetch detailed list of active/expiring memberships
+            const expiringMembershipsDocs = await Membership.find(expiringQuery)
+                .populate('memberId', 'fullName email')
+                .limit(5);
+
+            const expiringMembershipsDetailed = expiringMembershipsDocs.map(m => ({
+                fullName: m.memberId ? m.memberId.fullName : 'Unknown Member',
+                email: m.memberId ? m.memberId.email : 'N/A',
+                planType: m.planType,
+                endDate: new Date(m.endDate).toLocaleDateString()
+            }));
 
             res.status(200).json({
                 reportData: [
@@ -157,13 +243,28 @@ const getReportsData = async (req, res) => {
                     { metric: 'Expiring This Week', value: `${expiringCount} members warning` },
                     { metric: 'New Registrations (Period)', value: `+${newRegistrations} signups` },
                     { metric: 'Active Monthly Run Rate', value: `$${revenue}` }
-                ]
+                ],
+                expiringMembershipsDetailed
             });
 
         } else if (reportType === 'trainers') {
-            const trainers = await User.find({ role: 'trainer' }).select('fullName');
+            let trainerQuery = { role: 'trainer' };
+            if (trainerId) {
+                trainerQuery._id = trainerId;
+            }
+            const trainers = await User.find(trainerQuery).select('fullName specialization availability');
             const reportData = await Promise.all(trainers.map(async (t) => {
-                const count = await User.countDocuments({ assignedTrainer: t._id });
+                let clientQuery = { assignedTrainer: t._id };
+                if (planType) {
+                    if (memberIds === null) {
+                        const memberships = await Membership.find({ planType });
+                        const memberIdsWithPlan = memberships.map(m => m.memberId);
+                        clientQuery._id = { $in: memberIdsWithPlan };
+                    } else {
+                        clientQuery._id = { $in: memberIds };
+                    }
+                }
+                const count = await User.countDocuments(clientQuery);
                 let status = 'optimal';
                 if (count > 25) status = 'high';
                 else if (count < 10) status = 'low';
@@ -173,7 +274,31 @@ const getReportsData = async (req, res) => {
                 };
             }));
 
-            res.status(200).json({ reportData });
+            // Fetch detailed trainer workloads listing
+            const trainersDetailed = await Promise.all(trainers.map(async (t) => {
+                let clientQuery = { assignedTrainer: t._id };
+                if (planType) {
+                    if (memberIds === null) {
+                        const memberships = await Membership.find({ planType });
+                        const memberIdsWithPlan = memberships.map(m => m.memberId);
+                        clientQuery._id = { $in: memberIdsWithPlan };
+                    } else {
+                        clientQuery._id = { $in: memberIds };
+                    }
+                }
+                const count = await User.countDocuments(clientQuery);
+                return {
+                    fullName: t.fullName,
+                    specialization: t.specialization || 'General Training',
+                    availability: t.availability || 'Full-time',
+                    clientCount: count
+                };
+            }));
+
+            res.status(200).json({
+                reportData,
+                trainersDetailed
+            });
         } else {
             res.status(400).json({ message: 'Invalid report type specified' });
         }

@@ -200,10 +200,32 @@ const freezeMembership = async (req, res) => {
             return res.status(404).json({ message: 'Membership record not found' });
         }
 
-        // Toggle state
+        // Toggle state and log history
         const originalStatus = membership.status;
         const newStatus = originalStatus === 'Frozen' ? 'Active' : 'Frozen';
         membership.status = newStatus;
+
+        if (newStatus === 'Frozen') {
+            // Log freeze start
+            membership.freezeHistory.push({
+                frozenAt: new Date()
+            });
+        } else {
+            // Find active freeze log to unfreeze and compute extension duration
+            const activeFreeze = membership.freezeHistory.find(f => !f.unfrozenAt);
+            if (activeFreeze) {
+                activeFreeze.unfrozenAt = new Date();
+                
+                // Calculate difference in days
+                const diffMs = activeFreeze.unfrozenAt.getTime() - activeFreeze.frozenAt.getTime();
+                const diffDays = Math.max(1, Math.ceil(diffMs / (1000 * 60 * 60 * 24)));
+                
+                // Extend validity
+                membership.endDate = new Date(membership.endDate.getTime() + diffDays * 24 * 60 * 60 * 1000);
+                membership.totalFrozenDays = (membership.totalFrozenDays || 0) + diffDays;
+            }
+        }
+
         await membership.save();
 
         res.status(200).json({
@@ -215,11 +237,33 @@ const freezeMembership = async (req, res) => {
     }
 };
 
+/**
+ * Retrieve complete membership registration and renewal history for a member.
+ */
+const getMemberMembershipHistory = async (req, res) => {
+    try {
+        const memberId = req.params.id;
+
+        // Verify member exists
+        const member = await User.findById(memberId);
+        if (!member) {
+            return res.status(404).json({ message: 'Member not found' });
+        }
+
+        const history = await Membership.find({ memberId }).sort({ createdAt: -1 });
+
+        res.status(200).json({ history });
+    } catch (err) {
+        res.status(500).json({ message: 'Error retrieving membership history', error: err.message });
+    }
+};
+
 module.exports = {
     getMembersList,
     assignMembership,
     assignTrainer,
     checkInMember,
     getTrainersList,
-    freezeMembership
+    freezeMembership,
+    getMemberMembershipHistory
 };

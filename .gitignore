@@ -40,4 +40,4 @@ ehthumbs.db
 *.njsproj
 *.sln
 *.sw?
-*.md
+.md
