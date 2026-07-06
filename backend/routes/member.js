@@ -12,5 +12,6 @@ router.use(authorizeRoles('user', 'member'));
 router.get('/dashboard', memberController.getDashboardData);
 router.get('/progress', memberController.getProgressHistory);
 router.post('/purchase', memberController.purchaseMembership);
+router.get('/check-in-token', memberController.getCheckInToken);
 
 module.exports = router;

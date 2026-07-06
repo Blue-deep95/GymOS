@@ -88,7 +88,7 @@ export const MembershipHistoryConsole: React.FC<MembershipHistoryConsoleProps> =
                   {history.map((record) => (
                     <TableRow key={record._id} sx={{ borderBottom: '1px solid #e6e6e6' }}>
                       <TableCell sx={{ fontWeight: 600 }}>{record.planType}</TableCell>
-                      <TableCell sx={{ fontWeight: 700 }}>${record.price || 0}</TableCell>
+                      <TableCell sx={{ fontWeight: 700 }}>₹{record.price || 0}</TableCell>
                       <TableCell>{new Date(record.startDate).toLocaleDateString()}</TableCell>
                       <TableCell>{new Date(record.endDate).toLocaleDateString()}</TableCell>
                       <TableCell align="center">{record.totalFrozenDays || 0} days</TableCell>

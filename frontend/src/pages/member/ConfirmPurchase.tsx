@@ -12,7 +12,7 @@ export const ConfirmPurchase: React.FC = () => {
   const { token, setAuthData } = useAuth();
 
   const planType = searchParams.get('planType') || '3 Months';
-  const price = searchParams.get('price') || '$135';
+  const price = searchParams.get('price') || '₹3,500';
 
   const [loading, setLoading] = useState(false);
   const [cardName, setCardName] = useState('');

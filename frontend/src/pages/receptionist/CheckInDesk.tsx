@@ -1,12 +1,23 @@
-import React, { useState } from 'react';
-import { Box, Typography, TextField, InputAdornment, List, ListItem, ListItemText, ListItemSecondaryAction, Button, Card, CardContent, Alert } from '@mui/material';
+import React, { useState, useEffect, useRef } from 'react';
+import { Box, Typography, TextField, InputAdornment, List, ListItem, ListItemText, ListItemSecondaryAction, Button, Card, CardContent, Alert, Grid } from '@mui/material';
 import { useFetch, useMutation } from '../../hooks/useApi';
+import { Html5QrcodeScanner } from 'html5-qrcode';
+
+interface CheckInLog {
+  name: string;
+  time: string;
+  status: 'success' | 'error';
+  message: string;
+}
 
 export const CheckInDesk: React.FC = () => {
-  const { data: membersData } = useFetch('/api/receptionist/members');
+  const { data: membersData, refetch } = useFetch('/api/receptionist/members');
   const [search, setSearch] = useState('');
-  const [log, setLog] = useState<Array<{ name: string; time: string; status: 'success' | 'error'; message: string }>>([]);
+  const [log, setLog] = useState<CheckInLog[]>([]);
+  const [scanResult, setScanResult] = useState<{ success: boolean; message: string; details?: any } | null>(null);
+  
   const checkInMutation = useMutation('/api/receptionist/attendance/check-in', 'POST');
+  const scannerRef = useRef<Html5QrcodeScanner | null>(null);
 
   const members = membersData?.members || [];
 
@@ -15,17 +26,29 @@ export const CheckInDesk: React.FC = () => {
     member.email.toLowerCase().includes(search.toLowerCase())
   );
 
-  const handleCheckIn = async (member: any) => {
+  // Handle direct manual check-in
+  const handleManualCheckIn = async (member: any) => {
     try {
       await checkInMutation.execute({ memberId: member._id });
       const newEntry = {
         name: member.fullName,
         time: new Date().toLocaleTimeString(),
         status: 'success' as const,
-        message: 'Checked in successfully'
+        message: 'Checked in manually'
       };
       setLog(prev => [newEntry, ...prev]);
+      setScanResult({
+        success: true,
+        message: `Manual check-in successful for ${member.fullName}`,
+        details: {
+          fullName: member.fullName,
+          email: member.email,
+          assignedTrainerName: member.assignedTrainer?.fullName || 'Unassigned',
+          planType: member.currentMembership?.planType || 'None'
+        }
+      });
       setSearch('');
+      refetch();
     } catch (err: any) {
       const newEntry = {
         name: member.fullName,
@@ -34,9 +57,81 @@ export const CheckInDesk: React.FC = () => {
         message: err.message || 'Already checked in today'
       };
       setLog(prev => [newEntry, ...prev]);
+      setScanResult({
+        success: false,
+        message: err.message || 'Check-in failed'
+      });
       setSearch('');
     }
   };
+
+  // Handle scanned QR check-in token
+  const handleQrCheckIn = async (token: string) => {
+    try {
+      const res = await checkInMutation.execute({ token });
+      const memberInfo = res?.member || {};
+      const newEntry = {
+        name: memberInfo.fullName || 'Scanned Member',
+        time: new Date().toLocaleTimeString(),
+        status: 'success' as const,
+        message: 'Checked in via QR Code'
+      };
+      setLog(prev => [newEntry, ...prev]);
+      setScanResult({
+        success: true,
+        message: `Access Granted: Welcome back, ${memberInfo.fullName}!`,
+        details: memberInfo
+      });
+      refetch();
+    } catch (err: any) {
+      const newEntry = {
+        name: 'Check-in Attempt',
+        time: new Date().toLocaleTimeString(),
+        status: 'error' as const,
+        message: err.message || 'Token verification failed'
+      };
+      setLog(prev => [newEntry, ...prev]);
+      setScanResult({
+        success: false,
+        message: err.message || 'Verification failed. Try scanning a refreshed code.'
+      });
+    }
+  };
+
+  useEffect(() => {
+    // Initialize HTML5 QR Code Scanner
+    const scanner = new Html5QrcodeScanner(
+      'qr-reader-container',
+      {
+        fps: 10,
+        qrbox: { width: 250, height: 250 },
+        rememberLastUsedCamera: true
+      },
+      false
+    );
+
+    scanner.render(
+      (decodedText) => {
+        // Handle successful scan
+        if (decodedText) {
+          handleQrCheckIn(decodedText);
+        }
+      },
+      () => {
+        // Verbose scan failures can be ignored to avoid spamming console
+      }
+    );
+
+    scannerRef.current = scanner;
+
+    return () => {
+      if (scannerRef.current) {
+        scannerRef.current.clear().catch(err => {
+          console.warn('Failed to clear scanner during unmount:', err);
+        });
+      }
+    };
+  }, []);
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
@@ -54,22 +149,85 @@ export const CheckInDesk: React.FC = () => {
           Check-In Desk
         </Typography>
         <Typography variant="body1" color="text.secondary" sx={{ mt: 1 }}>
-          Scan or search member accounts to log daily attendance. Duplicates are blocked.
+          Scan dynamic member QR codes or lookup members manually to log check-in attendance.
         </Typography>
       </Box>
 
       <Grid container spacing={4}>
-        {/* Left Side: Check-in Search */}
-        <Grid size={{ xs: 12, md: 7 }}>
-          <Card elevation={0} sx={{ border: '1px solid #e6e6e6', borderRadius: '8px', backgroundColor: '#ffffff', minHeight: '300px' }}>
+        {/* Left Column: Live Webcam Scanner */}
+        <Grid size={{ xs: 12, md: 6 }}>
+          <Card elevation={0} sx={{ border: '1px solid #e6e6e6', borderRadius: '8px', backgroundColor: '#ffffff' }}>
             <CardContent sx={{ p: 4 }}>
               <Typography variant="h6" sx={{ fontFamily: "'Manrope', sans-serif", fontWeight: 800, color: '#1a1a1a', mb: 3 }}>
-                Search Member Account
+                📷 Live QR Scanner
+              </Typography>
+              
+              <Box
+                id="qr-reader-container"
+                sx={{
+                  width: '100%',
+                  '& #html5-qrcode-button-camera-start, & #html5-qrcode-button-camera-stop': {
+                    backgroundColor: '#1a1a1a',
+                    color: '#ffffff',
+                    padding: '8px 16px',
+                    border: 'none',
+                    borderRadius: '4px',
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    marginTop: '10px',
+                    '&:hover': { backgroundColor: '#000000' }
+                  },
+                  '& #html5-qrcode-anchor-scan-type-change': {
+                    color: '#1a1a1a',
+                    fontWeight: 700,
+                    textDecoration: 'underline'
+                  }
+                }}
+              />
+
+              {scanResult && (
+                <Box sx={{ mt: 4 }}>
+                  <Alert
+                    severity={scanResult.success ? 'success' : 'error'}
+                    sx={{
+                      borderRadius: '8px',
+                      backgroundColor: scanResult.success ? 'rgba(46, 125, 50, 0.05)' : 'rgba(211, 47, 47, 0.05)',
+                      border: `1px solid ${scanResult.success ? '#2e7d32' : '#d32f2f'}`
+                    }}
+                  >
+                    <Typography variant="subtitle2" sx={{ fontWeight: 800 }}>
+                      {scanResult.message}
+                    </Typography>
+                    {scanResult.success && scanResult.details && (
+                      <Box sx={{ mt: 1.5 }}>
+                        <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
+                          Plan: <strong>{scanResult.details.planType}</strong>
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
+                          Trainer: <strong>{scanResult.details.assignedTrainerName}</strong>
+                        </Typography>
+                      </Box>
+                    )}
+                  </Alert>
+                </Box>
+              )}
+            </CardContent>
+          </Card>
+        </Grid>
+
+        {/* Right Column: Manual Lookup & Logs */}
+        <Grid size={{ xs: 12, md: 6 }} sx={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+          {/* Manual Member Lookup Card */}
+          <Card elevation={0} sx={{ border: '1px solid #e6e6e6', borderRadius: '8px', backgroundColor: '#ffffff' }}>
+            <CardContent sx={{ p: 4 }}>
+              <Typography variant="h6" sx={{ fontFamily: "'Manrope', sans-serif", fontWeight: 800, color: '#1a1a1a', mb: 3 }}>
+                🔍 Manual Member Override
               </Typography>
               <TextField
-                placeholder="Type member name or email to search..."
+                placeholder="Search member name or email to override..."
                 variant="outlined"
                 fullWidth
+                size="small"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 sx={{
@@ -93,7 +251,7 @@ export const CheckInDesk: React.FC = () => {
                 }}
               />
 
-              {/* Search Results */}
+              {/* Search Result Dropdown List */}
               {search.trim() !== '' && (
                 <List sx={{ border: '1px solid #e6e6e6', borderRadius: '8px', overflow: 'hidden', p: 0 }}>
                   {filteredMembers.map((member: any) => (
@@ -103,7 +261,7 @@ export const CheckInDesk: React.FC = () => {
                         borderBottom: '1px solid #e6e6e6',
                         '&:last-child': { borderBottom: 'none' },
                         '&:hover': { backgroundColor: '#f2f2f2' },
-                        py: 2
+                        py: 1.5
                       }}
                     >
                       <ListItemText
@@ -113,11 +271,12 @@ export const CheckInDesk: React.FC = () => {
                       <ListItemSecondaryAction>
                         <Button
                           variant="contained"
-                          onClick={() => handleCheckIn(member)}
+                          size="small"
+                          onClick={() => handleManualCheckIn(member)}
                           sx={{
                             backgroundColor: '#1a1a1a',
                             color: '#ffffff',
-                            fontWeight: 600,
+                            fontWeight: 700,
                             textTransform: 'none',
                             borderRadius: '4px',
                             '&:hover': { backgroundColor: '#000000' }
@@ -135,27 +294,17 @@ export const CheckInDesk: React.FC = () => {
                   )}
                 </List>
               )}
-
-              {search.trim() === '' && (
-                <Box sx={{ py: 6, textAlign: 'center', border: '1px dashed #e6e6e6', borderRadius: '8px' }}>
-                  <Typography variant="body2" color="text.secondary">
-                    Search result entries will appear here.
-                  </Typography>
-                </Box>
-              )}
             </CardContent>
           </Card>
-        </Grid>
 
-        {/* Right Side: Live Log Feed */}
-        <Grid size={{ xs: 12, md: 5 }}>
-          <Card elevation={0} sx={{ border: '1px solid #e6e6e6', borderRadius: '8px', backgroundColor: '#ffffff', height: '100%' }}>
+          {/* Session Logs Card */}
+          <Card elevation={0} sx={{ border: '1px solid #e6e6e6', borderRadius: '8px', backgroundColor: '#ffffff', flexGrow: 1 }}>
             <CardContent sx={{ p: 4, display: 'flex', flexDirection: 'column', height: '100%' }}>
               <Typography variant="h6" sx={{ fontFamily: "'Manrope', sans-serif", fontWeight: 800, color: '#1a1a1a', mb: 3 }}>
                 Live Attendance Feed
               </Typography>
               
-              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, flexGrow: 1, overflowY: 'auto', maxH: '350px' }}>
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, overflowY: 'auto', maxH: '250px' }}>
                 {log.map((entry, idx) => (
                   <Alert
                     key={idx}
@@ -164,10 +313,10 @@ export const CheckInDesk: React.FC = () => {
                     sx={{
                       borderRadius: '8px',
                       fontFamily: "'Manrope', sans-serif",
-                      borderColor: entry.status === 'success' ? '#e6e6e6' : '#fdf313',
-                      backgroundColor: entry.status === 'success' ? 'transparent' : '#fdf31310',
+                      borderColor: entry.status === 'success' ? '#e6e6e6' : '#d32f2f',
+                      backgroundColor: entry.status === 'success' ? 'transparent' : 'rgba(211, 47, 47, 0.02)',
                       '& .MuiAlert-icon': {
-                        color: entry.status === 'success' ? '#1a1a1a' : '#fdf313'
+                        color: entry.status === 'success' ? '#1a1a1a' : '#d32f2f'
                       }
                     }}
                   >
@@ -197,6 +346,4 @@ export const CheckInDesk: React.FC = () => {
     </Box>
   );
 };
-
-// Add standard imports helper (Grid)
-import { Grid } from '@mui/material';
+export default CheckInDesk;

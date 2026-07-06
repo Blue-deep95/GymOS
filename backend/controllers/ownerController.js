@@ -242,7 +242,7 @@ const getDashboardStats = async (req, res) => {
                     { metric: 'Total Active Packages', value: `${activeCount} contracts` },
                     { metric: 'Expiring This Week', value: `${expiringCount} members warning` },
                     { metric: 'New Registrations (Period)', value: `+${newRegistrations} signups` },
-                    { metric: 'Active Monthly Run Rate', value: `$${revenue}` }
+                    { metric: 'Active Monthly Run Rate', value: `₹${revenue}` }
                 ],
                 expiringMembershipsDetailed
             });

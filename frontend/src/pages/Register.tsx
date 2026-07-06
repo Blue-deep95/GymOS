@@ -3,8 +3,10 @@ import { Box, Typography, TextField, Button, Container, Grid, Link as MuiLink } 
 import { Link as RouterLink, useNavigate } from 'react-router';
 import { useAuth } from '../context/AuthContext';
 import { useMutation } from '../hooks/useApi';
+import { useToast } from '../context/ToastContext';
 
 export const Register = () => {
+  const { showToast } = useToast();
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -31,10 +33,14 @@ export const Register = () => {
       });
       if (response && response.accessToken) {
         setAuthData(response.accessToken, response.user.role);
+        showToast('Registration successful! Welcome to gymOS.', 'success');
         navigate('/');
       }
-    } catch (err) {
-      // Error handled by useMutation hook
+    } catch (err: any) {
+      const msg = err.message === 'Network Error'
+        ? 'Network Connection Failure: Unable to reach GymOS backend. Check your local IP, WiFi connection, or server status.'
+        : err.message || 'Registration failed';
+      showToast(msg, 'error');
     }
   };
 

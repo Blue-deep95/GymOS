@@ -180,6 +180,43 @@ export const Navbar = () => {
                 >
                   Control Lab
                 </Button>
+
+                {(role === 'member' || role === 'user') && (
+                  <Button
+                    variant="contained"
+                    startIcon={
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                        <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+                        <rect x="7" y="7" width="3" height="3" />
+                        <rect x="14" y="7" width="3" height="3" />
+                        <rect x="7" y="14" width="3" height="3" />
+                        <rect x="14" y="14" width="3" height="3" />
+                      </svg>
+                    }
+                    component={RouterLink}
+                    to="/member/qr-card"
+                    sx={{
+                      py: 1,
+                      px: 2.5,
+                      fontSize: '14px',
+                      height: '42px',
+                      backgroundColor: '#fdf313',
+                      color: '#1a1a1a',
+                      fontWeight: 800,
+                      display: { xs: 'none', md: 'inline-flex' },
+                      '&:hover': {
+                        backgroundColor: '#e2d910'
+                      },
+                      '& .MuiButton-startIcon': {
+                        mr: 1,
+                        display: 'flex',
+                        alignItems: 'center',
+                      },
+                    }}
+                  >
+                    Attend Gym
+                  </Button>
+                )}
                 <Button
                   variant="contained"
                   startIcon={SignOutIcon}
@@ -345,6 +382,40 @@ export const Navbar = () => {
                   </Box>
                   Control Lab
                 </MenuItem>
+                
+                {(role === 'member' || role === 'user') && (
+                  <MenuItem
+                    onClick={handleCloseMenu}
+                    component={RouterLink}
+                    to="/member/qr-card"
+                    sx={{
+                      fontFamily: "'Manrope', sans-serif",
+                      fontWeight: 700,
+                      fontSize: '15px',
+                      color: '#1a1a1a',
+                      py: 1.5,
+                      px: 3,
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 1.5,
+                      backgroundColor: 'rgba(253, 243, 19, 0.1)',
+                      '&:hover': {
+                        backgroundColor: 'rgba(253, 243, 19, 0.25)',
+                      },
+                    }}
+                  >
+                    <Box sx={{ display: 'flex', alignItems: 'center', color: '#1a1a1a' }}>
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                        <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+                        <rect x="7" y="7" width="3" height="3" />
+                        <rect x="14" y="7" width="3" height="3" />
+                        <rect x="7" y="14" width="3" height="3" />
+                        <rect x="14" y="14" width="3" height="3" />
+                      </svg>
+                    </Box>
+                    Attend Gym
+                  </MenuItem>
+                )}
                 <MenuItem
                   onClick={handleLogout}
                   sx={{

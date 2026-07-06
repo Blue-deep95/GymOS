@@ -30,6 +30,7 @@ import { MemberWorkout } from './pages/member/MemberWorkout';
 import { MemberAttendance } from './pages/member/MemberAttendance';
 import { MemberProgress } from './pages/member/MemberProgress';
 import { ConfirmPurchase } from './pages/member/ConfirmPurchase';
+import { MemberQrCard } from './pages/member/MemberQrCard';
 
 function App() {
   return (
@@ -76,6 +77,7 @@ function App() {
               <Route path="attendance" element={<MemberAttendance />} />
               <Route path="progress" element={<MemberProgress />} />
               <Route path="confirm-purchase" element={<ConfirmPurchase />} />
+              <Route path="qr-card" element={<MemberQrCard />} />
             </Route>
           </Routes>
         </BrowserRouter>

@@ -3,8 +3,10 @@ import { Box, Typography, TextField, Button, Container, Grid, Link as MuiLink } 
 import { Link as RouterLink, useNavigate } from 'react-router';
 import { useAuth } from '../context/AuthContext';
 import { useMutation } from '../hooks/useApi';
+import { useToast } from '../context/ToastContext';
 
 export const SignIn = () => {
+  const { showToast } = useToast();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const navigate = useNavigate();
@@ -17,6 +19,7 @@ export const SignIn = () => {
       const response = await login({ email, password });
       if (response && response.accessToken) {
         setAuthData(response.accessToken, response.user.role);
+        showToast('Login successful! Welcome to the portal.', 'success');
         if (response.user.role === 'owner') {
           navigate('/owner/dashboard');
         } else if (response.user.role === 'trainer') {
@@ -29,8 +32,11 @@ export const SignIn = () => {
           navigate('/');
         }
       }
-    } catch (err) {
-      // Error handled by useMutation hook
+    } catch (err: any) {
+      const msg = err.message === 'Network Error'
+        ? 'Network Connection Failure: Unable to reach GymOS backend. Check your local IP, WiFi connection, or server status.'
+        : err.message || 'Login authentication failed';
+      showToast(msg, 'error');
     }
   };
 

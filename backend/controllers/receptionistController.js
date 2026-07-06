@@ -1,6 +1,7 @@
 const User = require('../models/User');
 const Membership = require('../models/Membership');
 const Attendance = require('../models/Attendance');
+const jwt = require('jsonwebtoken');
 
 /**
  * Fetch list of all members, populated with membership details and coach details.
@@ -48,10 +49,10 @@ const assignMembership = async (req, res) => {
             end.setMonth(end.getMonth() + 6);
         }
 
-        // Calculate a dummy price
-        let price = 50; // 1 Month
-        if (planType === '3 Months') price = 135; // discount
-        if (planType === '6 Months') price = 240; // discount
+        // Calculate a dummy price (INR)
+        let price = 1500; // 1 Month
+        if (planType === '3 Months') price = 3500; // discount
+        if (planType === '6 Months') price = 6500; // discount
 
         // Create new membership record
         const newMembership = new Membership({
@@ -126,16 +127,43 @@ const assignTrainer = async (req, res) => {
  */
 const checkInMember = async (req, res) => {
     try {
-        const { memberId } = req.body;
+        const { memberId, token } = req.body;
+        let targetMemberId = memberId;
 
-        if (!memberId) {
-            return res.status(400).json({ message: 'Member ID is required' });
+        if (token) {
+            // Validate and decode dynamic check-in token
+            try {
+                const decoded = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET || 'default_access_secret_key_12345');
+                if (decoded.purpose !== 'qr-check-in') {
+                    return res.status(400).json({ message: 'Invalid check-in token purpose' });
+                }
+                targetMemberId = decoded.id;
+            } catch (jwtErr) {
+                return res.status(400).json({ message: 'Check-in token expired or invalid. Please scan again.' });
+            }
+        }
+
+        if (!targetMemberId) {
+            return res.status(400).json({ message: 'Member ID or Check-in Token is required' });
         }
 
         // Verify member exists
-        const member = await User.findById(memberId);
+        const member = await User.findById(targetMemberId).populate('currentMembership').populate('assignedTrainer');
         if (!member) {
             return res.status(404).json({ message: 'Member not found' });
+        }
+
+        // Audit membership status
+        if (!member.currentMembership) {
+            return res.status(400).json({ message: 'Member has no active membership plan assigned. Please purchase a plan first.' });
+        }
+
+        if (member.currentMembership.status === 'Expired') {
+            return res.status(400).json({ message: 'Membership has expired. Access denied.' });
+        }
+
+        if (member.currentMembership.status === 'Frozen') {
+            return res.status(400).json({ message: 'Membership is currently frozen. Unfreeze to check in.' });
         }
 
         // Compute current YYYY-MM-DD string based on local server date
@@ -143,7 +171,7 @@ const checkInMember = async (req, res) => {
 
         try {
             const newAttendance = new Attendance({
-                memberId,
+                memberId: targetMemberId,
                 date: todayStr,
                 checkInTime: new Date()
             });
@@ -151,13 +179,31 @@ const checkInMember = async (req, res) => {
             await newAttendance.save();
 
             res.status(201).json({
-                message: 'Member checked in successfully',
-                attendance: newAttendance
+                message: `Check-in successful for ${member.fullName}`,
+                attendance: newAttendance,
+                member: {
+                    id: member._id,
+                    fullName: member.fullName,
+                    email: member.email,
+                    assignedTrainerName: member.assignedTrainer?.fullName || 'Unassigned',
+                    planType: member.currentMembership.planType,
+                    status: member.currentMembership.status
+                }
             });
         } catch (dbErr) {
             // Duplicate key error (code 11000) means already checked in today
             if (dbErr.code === 11000) {
-                return res.status(400).json({ message: 'Member has already checked in today.' });
+                return res.status(400).json({
+                    message: 'Member has already checked in today.',
+                    member: {
+                        id: member._id,
+                        fullName: member.fullName,
+                        email: member.email,
+                        assignedTrainerName: member.assignedTrainer?.fullName || 'Unassigned',
+                        planType: member.currentMembership.planType,
+                        status: member.currentMembership.status
+                    }
+                });
             }
             throw dbErr; // escalate to outer catch
         }

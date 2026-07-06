@@ -12,21 +12,21 @@ export const Plans: React.FC = () => {
   const packages = [
     {
       name: '1 Month Membership',
-      price: '$50',
+      price: '₹1,500',
       duration: '1 Month',
       desc: 'Full access to training floors, locker amenities, and athlete progress logs for 30 days.',
       popular: false
     },
     {
       name: '3 Months Membership',
-      price: '$135',
+      price: '₹3,500',
       duration: '3 Months',
       desc: 'Discounted 90-day package including coach pairing and custom routine builders.',
       popular: true // Highlight this package with Electric Yellow
     },
     {
       name: '6 Months Membership',
-      price: '$240',
+      price: '₹6,500',
       duration: '6 Months',
       desc: 'Our best-value 180-day package with unrestricted program tracking and metrics updates.',
       popular: false

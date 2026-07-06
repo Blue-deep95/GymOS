@@ -3,6 +3,7 @@ const Attendance = require('../models/Attendance');
 const AssignedProgram = require('../models/AssignedProgram');
 const Measurement = require('../models/Measurement');
 const Membership = require('../models/Membership');
+const jwt = require('jsonwebtoken');
 
 /**
  * Fetch all operational and workout metrics for a member's dashboard profile.
@@ -120,10 +121,10 @@ const purchaseMembership = async (req, res) => {
             end.setMonth(end.getMonth() + 6);
         }
 
-        // Price mapping
-        let price = 50;
-        if (planType === '3 Months') price = 135;
-        if (planType === '6 Months') price = 240;
+        // Price mapping (INR)
+        let price = 1500;
+        if (planType === '3 Months') price = 3500;
+        if (planType === '6 Months') price = 6500;
 
         // Create new membership record
         const newMembership = new Membership({
@@ -153,8 +154,25 @@ const purchaseMembership = async (req, res) => {
     }
 };
 
+/**
+ * Generate short-lived check-in token for QR scanning
+ */
+const getCheckInToken = async (req, res) => {
+    try {
+        const token = jwt.sign(
+            { id: req.user.id, purpose: 'qr-check-in' },
+            process.env.ACCESS_TOKEN_SECRET || 'default_access_secret_key_12345',
+            { expiresIn: '30s' }
+        );
+        res.status(200).json({ token });
+    } catch (err) {
+        res.status(500).json({ message: 'Error generating check-in token', error: err.message });
+    }
+};
+
 module.exports = {
     getDashboardData,
     getProgressHistory,
-    purchaseMembership
+    purchaseMembership,
+    getCheckInToken
 };
