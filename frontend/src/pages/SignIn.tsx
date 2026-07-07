@@ -180,6 +180,25 @@ export const SignIn = () => {
                     },
                   }}
                 />
+                
+                <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: -1.5 }}>
+                  <MuiLink
+                    component={RouterLink}
+                    to="/forgot-password"
+                    sx={{
+                      fontFamily: "'Inter', sans-serif",
+                      fontSize: '13px',
+                      color: 'text.secondary',
+                      textDecoration: 'none',
+                      fontWeight: 500,
+                      '&:hover': {
+                        color: 'text.primary',
+                      },
+                    }}
+                  >
+                    Forgot Password?
+                  </MuiLink>
+                </Box>
               </Box>
 
               {/* Submit Button */}

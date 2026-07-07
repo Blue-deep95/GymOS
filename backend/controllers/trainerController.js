@@ -110,6 +110,7 @@ const getDashboardStats = async (req, res) => {
             needsUpdate
         });
     } catch (err) {
+        console.error('Error in getDashboardStats:', err);
         res.status(500).json({ message: 'Error retrieving trainer stats', error: err.message });
     }
 };
@@ -135,6 +136,7 @@ const getAssignedMembers = async (req, res) => {
 
         res.status(200).json({ members: membersWithPrograms });
     } catch (err) {
+        console.error('Error in getAssignedMembers:', err);
         res.status(500).json({ message: 'Error retrieving assigned members', error: err.message });
     }
 };
@@ -192,6 +194,7 @@ const assignProgram = async (req, res) => {
             assignedProgram: newProgram
         });
     } catch (err) {
+        console.error('Error in assignProgram:', err);
         res.status(500).json({ message: 'Error assigning workout program', error: err.message });
     }
 };
@@ -205,6 +208,7 @@ const getWorkoutTemplates = async (req, res) => {
         const templates = await WorkoutTemplate.find({ trainerId }).sort({ createdAt: -1 });
         res.status(200).json({ templates });
     } catch (err) {
+        console.error('Error in getWorkoutTemplates:', err);
         res.status(500).json({ message: 'Error fetching workout templates', error: err.message });
     }
 };
@@ -235,6 +239,7 @@ const createWorkoutTemplate = async (req, res) => {
             template: newTemplate
         });
     } catch (err) {
+        console.error('Error in createWorkoutTemplate:', err);
         res.status(500).json({ message: 'Error creating workout template', error: err.message });
     }
 };
@@ -255,6 +260,7 @@ const deleteWorkoutTemplate = async (req, res) => {
 
         res.status(200).json({ message: 'Template deleted successfully' });
     } catch (err) {
+        console.error('Error in deleteWorkoutTemplate:', err);
         res.status(500).json({ message: 'Error deleting workout template', error: err.message });
     }
 };
@@ -281,6 +287,7 @@ const removeProgram = async (req, res) => {
 
         res.status(200).json({ message: 'Program removed successfully' });
     } catch (err) {
+        console.error('Error in removeProgram:', err);
         res.status(500).json({ message: 'Error removing workout program', error: err.message });
     }
 };
@@ -322,6 +329,7 @@ const recordProgress = async (req, res) => {
             measurement: newMeasurement
         });
     } catch (err) {
+        console.error('Error in recordProgress:', err);
         res.status(500).json({ message: 'Error recording member progress metrics', error: err.message });
     }
 };
@@ -348,6 +356,7 @@ const getProgressHistory = async (req, res) => {
 
         res.status(200).json({ progressHistory });
     } catch (err) {
+        console.error('Error in getProgressHistory:', err);
         res.status(500).json({ message: 'Error fetching progress logs', error: err.message });
     }
 };
@@ -388,6 +397,7 @@ const getMemberProfileDetail = async (req, res) => {
             progressHistory
         });
     } catch (err) {
+        console.error('Error in getMemberProfileDetail:', err);
         res.status(500).json({ message: 'Error compiling athlete bio dossier', error: err.message });
     }
 };

@@ -40,6 +40,7 @@ export const MemberLayout: React.FC = () => {
     { label: 'My Workout Plan', path: '/member/workout' },
     { label: 'My Attendance', path: '/member/attendance' },
     { label: 'My Progress', path: '/member/progress' },
+    { label: 'Profile Settings', path: '/member/profile' },
   ];
 
   return (

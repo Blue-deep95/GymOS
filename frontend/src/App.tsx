@@ -5,6 +5,7 @@ import { theme } from './theme';
 import { LandingPage } from './pages/LandingPage';
 import { SignIn } from './pages/SignIn';
 import { Register } from './pages/Register';
+import { ForgotPassword } from './pages/ForgotPassword';
 import { Plans } from './pages/Plans';
 import { About } from './pages/About';
 import { Contact } from './pages/Contact';
@@ -31,6 +32,7 @@ import { MemberAttendance } from './pages/member/MemberAttendance';
 import { MemberProgress } from './pages/member/MemberProgress';
 import { ConfirmPurchase } from './pages/member/ConfirmPurchase';
 import { MemberQrCard } from './pages/member/MemberQrCard';
+import { MemberProfile } from './pages/member/MemberProfile';
 
 function App() {
   return (
@@ -44,6 +46,7 @@ function App() {
             <Route path="/" element={<LandingPage />} />
             <Route path="/signin" element={<SignIn />} />
             <Route path="/register" element={<Register />} />
+            <Route path="/forgot-password" element={<ForgotPassword />} />
             <Route path="/plans" element={<Plans />} />
             <Route path="/about" element={<About />} />
             <Route path="/contact" element={<Contact />} />
@@ -78,6 +81,7 @@ function App() {
               <Route path="progress" element={<MemberProgress />} />
               <Route path="confirm-purchase" element={<ConfirmPurchase />} />
               <Route path="qr-card" element={<MemberQrCard />} />
+              <Route path="profile" element={<MemberProfile />} />
             </Route>
           </Routes>
         </BrowserRouter>

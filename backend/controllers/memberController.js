@@ -66,6 +66,7 @@ const getDashboardData = async (req, res) => {
             attendance
         });
     } catch (err) {
+        console.error('Error in getDashboardData:', err);
         res.status(500).json({ message: 'Error retrieving member dashboard metrics', error: err.message });
     }
 };
@@ -81,6 +82,7 @@ const getProgressHistory = async (req, res) => {
 
         res.status(200).json({ progressHistory });
     } catch (err) {
+        console.error('Error in getProgressHistory:', err);
         res.status(500).json({ message: 'Error fetching progress logs', error: err.message });
     }
 };
@@ -150,6 +152,7 @@ const purchaseMembership = async (req, res) => {
             membership: newMembership
         });
     } catch (err) {
+        console.error('Error in purchaseMembership:', err);
         res.status(500).json({ message: 'Error processing membership purchase', error: err.message });
     }
 };
@@ -166,7 +169,33 @@ const getCheckInToken = async (req, res) => {
         );
         res.status(200).json({ token });
     } catch (err) {
+        console.error('Error in getCheckInToken:', err);
         res.status(500).json({ message: 'Error generating check-in token', error: err.message });
+    }
+};
+
+/**
+ * Update member profile details (fullName, phone, emergencyContact, fitnessGoals, medicalNotes)
+ */
+const updateProfile = async (req, res) => {
+    try {
+        const { fullName, phone, emergencyContact, fitnessGoals, medicalNotes } = req.body;
+        const user = await User.findById(req.user.id);
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+
+        if (fullName) user.fullName = fullName;
+        if (phone) user.phone = phone;
+        if (emergencyContact) user.emergencyContact = emergencyContact;
+        if (fitnessGoals) user.fitnessGoals = fitnessGoals;
+        if (medicalNotes) user.medicalNotes = medicalNotes;
+
+        await user.save();
+        res.status(200).json({ message: 'Profile updated successfully', user });
+    } catch (err) {
+        console.error('Error in updateProfile:', err);
+        res.status(500).json({ message: 'Error updating profile', error: err.message });
     }
 };
 
@@ -174,5 +203,6 @@ module.exports = {
     getDashboardData,
     getProgressHistory,
     purchaseMembership,
-    getCheckInToken
+    getCheckInToken,
+    updateProfile
 };

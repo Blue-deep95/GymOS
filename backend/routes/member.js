@@ -13,5 +13,6 @@ router.get('/dashboard', memberController.getDashboardData);
 router.get('/progress', memberController.getProgressHistory);
 router.post('/purchase', memberController.purchaseMembership);
 router.get('/check-in-token', memberController.getCheckInToken);
+router.put('/profile', memberController.updateProfile);
 
 module.exports = router;

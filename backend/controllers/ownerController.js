@@ -84,6 +84,7 @@ const getDashboardStats = async (req, res) => {
             attendanceTrend
         });
     } catch (err) {
+        console.error('Error in getDashboardStats:', err);
         res.status(500).json({ message: 'Error compiling owner dashboard stats', error: err.message });
     }
 };
@@ -303,6 +304,7 @@ const getDashboardStats = async (req, res) => {
             res.status(400).json({ message: 'Invalid report type specified' });
         }
     } catch (err) {
+        console.error('Error in getReportsData:', err);
         res.status(500).json({ message: 'Error compiling operations records', error: err.message });
     }
 };
@@ -319,6 +321,7 @@ const getMembersList = async (req, res) => {
 
         res.status(200).json({ members });
     } catch (err) {
+        console.error('Error in getMembersList:', err);
         res.status(500).json({ message: 'Error retrieving member directory', error: err.message });
     }
 };
@@ -349,6 +352,7 @@ const getTrainersList = async (req, res) => {
 
         res.status(200).json({ trainers: list });
     } catch (err) {
+        console.error('Error in getTrainersList:', err);
         res.status(500).json({ message: 'Error compiling trainer registry', error: err.message });
     }
 };
@@ -391,6 +395,7 @@ const createTrainer = async (req, res) => {
             }
         });
     } catch (err) {
+        console.error('Error in createTrainer:', err);
         res.status(500).json({ message: 'Error adding new trainer profile', error: err.message });
     }
 };

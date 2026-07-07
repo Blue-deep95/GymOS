@@ -15,6 +15,7 @@ const getMembersList = async (req, res) => {
 
         res.status(200).json({ members });
     } catch (err) {
+        console.error('Error in getMembersList:', err);
         res.status(500).json({ message: 'Error retrieving member directory', error: err.message });
     }
 };
@@ -79,6 +80,7 @@ const assignMembership = async (req, res) => {
             membership: newMembership
         });
     } catch (err) {
+        console.error('Error in assignMembership:', err);
         res.status(500).json({ message: 'Error assigning membership package', error: err.message });
     }
 };
@@ -117,6 +119,7 @@ const assignTrainer = async (req, res) => {
             assignedTrainerId: member.assignedTrainer
         });
     } catch (err) {
+        console.error('Error in assignTrainer:', err);
         res.status(500).json({ message: 'Error assigning trainer', error: err.message });
     }
 };
@@ -139,6 +142,7 @@ const checkInMember = async (req, res) => {
                 }
                 targetMemberId = decoded.id;
             } catch (jwtErr) {
+                console.error('JWT Error in checkInMember:', jwtErr);
                 return res.status(400).json({ message: 'Check-in token expired or invalid. Please scan again.' });
             }
         }
@@ -191,6 +195,7 @@ const checkInMember = async (req, res) => {
                 }
             });
         } catch (dbErr) {
+            console.error('Database Error in checkInMember save:', dbErr);
             // Duplicate key error (code 11000) means already checked in today
             if (dbErr.code === 11000) {
                 return res.status(400).json({
@@ -208,6 +213,7 @@ const checkInMember = async (req, res) => {
             throw dbErr; // escalate to outer catch
         }
     } catch (err) {
+        console.error('Error in checkInMember:', err);
         res.status(500).json({ message: 'Error processing member attendance check-in', error: err.message });
     }
 };
@@ -220,6 +226,7 @@ const getTrainersList = async (req, res) => {
         const trainers = await User.find({ role: 'trainer' }).select('fullName email specialization');
         res.status(200).json({ trainers });
     } catch (err) {
+        console.error('Error in getTrainersList:', err);
         res.status(500).json({ message: 'Error retrieving trainers list', error: err.message });
     }
 };
@@ -279,6 +286,7 @@ const freezeMembership = async (req, res) => {
             membership
         });
     } catch (err) {
+        console.error('Error in freezeMembership:', err);
         res.status(500).json({ message: 'Error updating membership status', error: err.message });
     }
 };
@@ -300,6 +308,7 @@ const getMemberMembershipHistory = async (req, res) => {
 
         res.status(200).json({ history });
     } catch (err) {
+        console.error('Error in getMemberMembershipHistory:', err);
         res.status(500).json({ message: 'Error retrieving membership history', error: err.message });
     }
 };

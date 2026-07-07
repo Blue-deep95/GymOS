@@ -8,6 +8,7 @@ const receptionistRoutes = require('./routes/receptionist')
 const trainerRoutes = require('./routes/trainer')
 const memberRoutes = require('./routes/member')
 const ownerRoutes = require('./routes/owner')
+const otpRoutes = require('./routes/otp')
 
 const app = express()
 
@@ -44,6 +45,9 @@ app.use('/api/member', memberRoutes)
 
 // Mount Owner Routes
 app.use('/api/owner', ownerRoutes)
+
+// Mount OTP Verification Routes
+app.use('/api/otp', otpRoutes)
 
 
 app.listen(PORT , () => console.log("Server running on PORT --> "+ PORT))
