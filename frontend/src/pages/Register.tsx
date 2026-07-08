@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Box, Typography, TextField, Button, Container, Grid, Link as MuiLink } from '@mui/material';
+import { Box, Typography, TextField, Button, Container, Grid, Link as MuiLink, Alert } from '@mui/material';
 import { Link as RouterLink, useNavigate } from 'react-router';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
@@ -20,6 +20,7 @@ export const Register = () => {
   const [verifyLoading, setVerifyLoading] = useState(false);
   const [registerLoading, setRegisterLoading] = useState(false);
   const [timer, setTimer] = useState(0);
+  const [demoOtp, setDemoOtp] = useState('');
 
   const navigate = useNavigate();
   const { setAuthData } = useAuth();
@@ -45,6 +46,9 @@ export const Register = () => {
     try {
       const res = await api.post('/api/otp/send', { email });
       showToast(res.data.message || 'Verification code sent!', 'success');
+      if (res.data?.otp) {
+        setDemoOtp(res.data.otp);
+      }
       setStep(2);
       setTimer(60); // 60s cooldown for resends
     } catch (err: any) {
@@ -249,6 +253,12 @@ export const Register = () => {
                   <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
                     We've emailed a verification code to <strong>{email}</strong>. Please check your inbox.
                   </Typography>
+
+                  {demoOtp && (
+                    <Alert severity="warning" sx={{ mb: 3, fontWeight: 700 }}>
+                      [DEMO MODE] For test purposes, your verification code is: {demoOtp}
+                    </Alert>
+                  )}
                   <TextField
                     label="6-Digit Verification Code"
                     type="text"

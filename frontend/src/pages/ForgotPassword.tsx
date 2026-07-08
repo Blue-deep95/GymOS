@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Box, Typography, TextField, Button, Container, Grid, Link as MuiLink } from '@mui/material';
+import { Box, Typography, TextField, Button, Container, Grid, Link as MuiLink, Alert } from '@mui/material';
 import { Link as RouterLink, useNavigate } from 'react-router';
 import { useToast } from '../context/ToastContext';
 import api from '../api';
@@ -14,6 +14,7 @@ export const ForgotPassword = () => {
   const [sendLoading, setSendLoading] = useState(false);
   const [resetLoading, setResetLoading] = useState(false);
   const [timer, setTimer] = useState(0);
+  const [demoOtp, setDemoOtp] = useState('');
 
   const navigate = useNavigate();
   const { showToast } = useToast();
@@ -38,6 +39,9 @@ export const ForgotPassword = () => {
     try {
       const res = await api.post('/api/auth/forgot-password', { email });
       showToast(res.data.message || 'Reset code sent successfully!', 'success');
+      if (res.data?.otp) {
+        setDemoOtp(res.data.otp);
+      }
       setStep(2);
       setTimer(60);
     } catch (err: any) {
@@ -216,6 +220,12 @@ export const ForgotPassword = () => {
                   <Typography variant="body2" color="text.secondary">
                     Check your recovery inbox at <strong>{email}</strong> for your 6-digit verification code.
                   </Typography>
+
+                  {demoOtp && (
+                    <Alert severity="warning" sx={{ fontWeight: 700 }}>
+                      [DEMO MODE] For test purposes, your recovery code is: {demoOtp}
+                    </Alert>
+                  )}
                   
                   <TextField
                     label="6-Digit Reset Code"

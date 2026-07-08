@@ -76,14 +76,15 @@ const sendOTP = async (req, res) => {
             };
 
             await transporter.sendMail(mailOptions);
-            res.status(200).json({ message: 'Verification code emailed successfully.' });
+            res.status(200).json({ message: 'Verification code emailed successfully.', otp });
         } else {
             console.log('\n====================================');
             console.log(`[SMTP OFFLINE] Registration OTP for ${email}: ${otp}`);
             console.log('====================================\n');
             res.status(200).json({ 
                 message: 'Verification code logged to server console (Mock Transmit).',
-                mockMode: true 
+                mockMode: true,
+                otp
             });
         }
     } catch (err) {

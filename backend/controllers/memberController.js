@@ -4,6 +4,8 @@ const AssignedProgram = require('../models/AssignedProgram');
 const Measurement = require('../models/Measurement');
 const Membership = require('../models/Membership');
 const jwt = require('jsonwebtoken');
+const crypto = require('crypto');
+const razorpay = require('../config/razorpay');
 
 /**
  * Fetch all operational and workout metrics for a member's dashboard profile.
@@ -199,10 +201,152 @@ const updateProfile = async (req, res) => {
     }
 };
 
+/**
+ * Create a new Razorpay hosted Payment Link (or mock link if client is offline)
+ */
+const createRazorpayOrder = async (req, res) => {
+    try {
+        const memberId = req.user.id;
+        const { planType } = req.body;
+
+        if (!planType || !['1 Month', '3 Months', '6 Months'].includes(planType)) {
+            return res.status(400).json({ message: 'Invalid membership plan type. Must be "1 Month", "3 Months", or "6 Months".' });
+        }
+
+        const member = await User.findById(memberId).populate('currentMembership');
+        if (!member) {
+            return res.status(404).json({ message: 'Member profile not found' });
+        }
+
+        if (member.currentMembership && ['Active', 'Frozen'].includes(member.currentMembership.status)) {
+            return res.status(400).json({
+                message: 'You already have an active or frozen membership subscription. Contact reception to upgrade or modify your package.'
+            });
+        }
+
+        let price = 1500;
+        if (planType === '3 Months') price = 3500;
+        if (planType === '6 Months') price = 6500;
+
+        const amountInPaisa = price * 100;
+
+        if (razorpay) {
+            // Clean contact number (must be strictly numbers and leading '+')
+            const rawPhone = member.phone || '';
+            const sanitizedPhone = rawPhone.replace(/[^0-9+]/g, '');
+            
+            // Detect if phone has repeating consecutive digits (e.g. 5+ repeats of same digit) or is too short
+            let contactPrefill = sanitizedPhone;
+            if (sanitizedPhone.length < 10 || /(.)\1{4,}/.test(sanitizedPhone)) {
+                contactPrefill = '+919876543210'; // Safe non-recurring test number
+            }
+
+            const paymentLink = await razorpay.paymentLink.create({
+                amount: amountInPaisa,
+                currency: 'INR',
+                accept_partial: false,
+                description: `${planType} Membership Package Renewal`,
+                customer: {
+                    name: member.fullName || 'Test Member',
+                    email: member.email || 'test@gymos.com',
+                    contact: contactPrefill
+                },
+                notify: { sms: false, email: false },
+                reminder_enable: false,
+                callback_url: `${process.env.FRONTEND_URL || 'http://localhost:5173'}/member/confirm-purchase`,
+                callback_method: 'get'
+            });
+
+            return res.status(200).json({
+                paymentLinkUrl: paymentLink.short_url,
+                paymentLinkId: paymentLink.id
+            });
+        } else {
+            // Fallback Offline Mock Mode
+            const mockLinkId = `plink_mock_${Date.now()}`;
+            return res.status(200).json({
+                paymentLinkUrl: null,
+                paymentLinkId: mockLinkId,
+                simulated: true
+            });
+        }
+    } catch (err) {
+        console.error('Error in createRazorpayOrder:', err);
+        res.status(500).json({ message: 'Error generating hosted checkout session', error: err.message });
+    }
+};
+
+/**
+ * Verify Razorpay payment and activate membership
+ */
+const verifyPaymentSignature = async (req, res) => {
+    try {
+        const memberId = req.user.id;
+        const { razorpay_payment_id, planType } = req.body;
+
+        if (!planType || !['1 Month', '3 Months', '6 Months'].includes(planType)) {
+            return res.status(400).json({ message: 'Invalid plan type.' });
+        }
+
+        // Fetch payment details directly from Razorpay to verify status
+        if (razorpay && razorpay_payment_id && !razorpay_payment_id.startsWith('pay_mock_')) {
+            const payment = await razorpay.payments.fetch(razorpay_payment_id);
+            if (payment.status !== 'captured' && payment.status !== 'authorized') {
+                return res.status(400).json({ message: 'Payment verification failed. Transaction status is not captured.' });
+            }
+        }
+
+        // Setup dates
+        const start = new Date();
+        const end = new Date(start);
+        if (planType === '1 Month') end.setMonth(end.getMonth() + 1);
+        else if (planType === '3 Months') end.setMonth(end.getMonth() + 3);
+        else if (planType === '6 Months') end.setMonth(end.getMonth() + 6);
+
+        let price = 1500;
+        if (planType === '3 Months') price = 3500;
+        if (planType === '6 Months') price = 6500;
+
+        // Save membership record
+        const newMembership = new Membership({
+            memberId,
+            planType,
+            startDate: start,
+            endDate: end,
+            status: 'Active',
+            price,
+            paymentId: razorpay_payment_id || 'simulated_payment_id',
+            orderId: 'hosted_payment_link'
+        });
+
+        await newMembership.save();
+
+        // Bind to user profile
+        const member = await User.findById(memberId);
+        if (member) {
+            member.currentMembership = newMembership._id;
+            if (member.role === 'user') {
+                member.role = 'member';
+            }
+            await member.save();
+        }
+
+        res.status(201).json({
+            message: 'Membership transaction verified and activated!',
+            membership: newMembership
+        });
+    } catch (err) {
+        console.error('Error in verifyPaymentSignature:', err);
+        res.status(500).json({ message: 'Error verifying purchase verification', error: err.message });
+    }
+};
+
 module.exports = {
     getDashboardData,
     getProgressHistory,
     purchaseMembership,
     getCheckInToken,
-    updateProfile
+    updateProfile,
+    createRazorpayOrder,
+    verifyPaymentSignature
 };

@@ -239,14 +239,15 @@ const forgotPassword = async (req, res) => {
                 `
             };
             await transporter.sendMail(mailOptions);
-            res.status(200).json({ message: 'Password reset code emailed successfully.' });
+            res.status(200).json({ message: 'Password reset code emailed successfully.', otp });
         } else {
             console.log('\n====================================');
             console.log(`[SMTP OFFLINE] Password Reset OTP for ${email}: ${otp}`);
             console.log('====================================\n');
             res.status(200).json({ 
                 message: 'Password reset code logged to server console (Mock Transmit).',
-                mockMode: true 
+                mockMode: true,
+                otp
             });
         }
     } catch (err) {

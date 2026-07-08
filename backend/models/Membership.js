@@ -34,6 +34,12 @@ const membershipSchema = new mongoose.Schema({
     totalFrozenDays: {
         type: Number,
         default: 0
+    },
+    paymentId: {
+        type: String
+    },
+    orderId: {
+        type: String
     }
 }, {
     timestamps: true

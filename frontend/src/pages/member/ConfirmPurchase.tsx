@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Box, Typography, Container, Card, CardContent, Button, TextField, Grid, Divider } from '@mui/material';
+import React, { useState, useEffect } from 'react';
+import { Box, Typography, Container, Card, CardContent, Button, Divider, Alert, CircularProgress } from '@mui/material';
 import { useSearchParams, useNavigate } from 'react-router';
 import { useToast } from '../../context/ToastContext';
 import { useAuth } from '../../context/AuthContext';
@@ -14,11 +14,14 @@ export const ConfirmPurchase: React.FC = () => {
   const planType = searchParams.get('planType') || '3 Months';
   const price = searchParams.get('price') || '₹3,500';
 
+  // Read callback variables returned by Razorpay Payment Link redirect
+  const razorpayPaymentId = searchParams.get('razorpay_payment_id');
+  const paymentLinkStatus = searchParams.get('razorpay_payment_link_status');
+
   const [loading, setLoading] = useState(false);
-  const [cardName, setCardName] = useState('');
-  const [cardNumber, setCardNumber] = useState('');
-  const [cardExpiry, setCardExpiry] = useState('');
-  const [cardCvv, setCardCvv] = useState('');
+  const [verifyingPayment, setVerifyingPayment] = useState(false);
+  const [isSimulatedMode, setIsSimulatedMode] = useState(false);
+  const [simulatedOrderDetails, setSimulatedOrderDetails] = useState<any>(null);
 
   // Calculate dates
   const startDate = new Date();
@@ -27,28 +30,91 @@ export const ConfirmPurchase: React.FC = () => {
   else if (planType === '3 Months') endDate.setMonth(endDate.getMonth() + 3);
   else if (planType === '6 Months') endDate.setMonth(endDate.getMonth() + 6);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!cardName || !cardNumber) {
-      showToast('Please fill in card details to verify purchase eligibility.', 'error');
-      return;
-    }
+  // 1. Check on mount: If redirected back from Razorpay, verify payment status
+  useEffect(() => {
+    const verifyPayment = async () => {
+      if (razorpayPaymentId && paymentLinkStatus === 'paid') {
+        setVerifyingPayment(true);
+        try {
+          const res = await api.post('/api/member/purchase/verify', {
+            razorpay_payment_id: razorpayPaymentId,
+            planType
+          });
+          showToast(res.data.message || 'Payment verified successfully!', 'success');
+          setAuthData(token, 'member');
+          navigate('/member/dashboard');
+        } catch (err: any) {
+          const errMsg = err.response?.data?.message || 'Verification failed';
+          showToast(errMsg, 'error');
+        } finally {
+          setVerifyingPayment(false);
+        }
+      }
+    };
+    verifyPayment();
+  }, [razorpayPaymentId, paymentLinkStatus, navigate, planType, token, setAuthData, showToast]);
 
+  // 2. Initiate transaction: Request Payment Link from backend
+  const handleProceedToPayment = async () => {
     setLoading(true);
     try {
-      await api.post('/api/member/purchase', { planType });
-      showToast('Membership purchased successfully! Welcome to the lab.', 'success');
-      
-      // Update session token/role if user's role upgraded from user -> member
-      setAuthData(token, 'member');
+      const res = await api.post('/api/member/purchase/order', { planType });
+      const { paymentLinkUrl, paymentLinkId, simulated } = res.data;
 
-      navigate('/member/dashboard');
+      if (simulated) {
+        setIsSimulatedMode(true);
+        setSimulatedOrderDetails({ orderId: paymentLinkId, planType });
+        return;
+      }
+
+      if (paymentLinkUrl) {
+        // Redirect browser directly to Razorpay's secure hosted payment page!
+        window.location.href = paymentLinkUrl;
+      } else {
+        showToast('Checkout link not returned by server.', 'error');
+      }
     } catch (err: any) {
-      showToast(err.response?.data?.message || err.message || 'Failed to complete transaction', 'error');
+      const errMsg = err.response?.data?.message || err.message || 'Error generating payment session';
+      showToast(errMsg, 'error');
     } finally {
       setLoading(false);
     }
   };
+
+  // 3. Simulated checkout validation (Offline/Mock)
+  const handleSimulatedSuccess = async () => {
+    if (!simulatedOrderDetails) return;
+    setLoading(true);
+    try {
+      const verifyRes = await api.post('/api/member/purchase/verify', {
+        razorpay_payment_id: `pay_mock_${Date.now()}`,
+        planType
+      });
+      showToast(verifyRes.data.message || 'Simulated transaction successful!', 'success');
+      setAuthData(token, 'member');
+      navigate('/member/dashboard');
+    } catch (err: any) {
+      showToast('Simulated verification failed', 'error');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (verifyingPayment) {
+    return (
+      <Container maxWidth="sm" sx={{ py: 12, textAlign: 'center' }}>
+        <Card elevation={0} sx={{ border: '1px solid #e6e6e6', borderRadius: '8px', p: 6 }}>
+          <CircularProgress color="inherit" sx={{ mb: 3 }} />
+          <Typography variant="h5" sx={{ fontWeight: 900, mb: 1, textTransform: 'uppercase' }}>
+            Verifying Transaction
+          </Typography>
+          <Typography variant="body2" color="text.secondary">
+            Please wait while we confirm your payment status with Razorpay. Do not close or refresh this page.
+          </Typography>
+        </Card>
+      </Container>
+    );
+  }
 
   return (
     <Container maxWidth="sm" sx={{ py: 8 }}>
@@ -66,7 +132,7 @@ export const ConfirmPurchase: React.FC = () => {
           Confirm Package Acquisition
         </Typography>
         <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-          Complete subscription details to activate your training locker.
+          Secure transaction powered by Razorpay hosted checkout page.
         </Typography>
       </Box>
 
@@ -111,95 +177,103 @@ export const ConfirmPurchase: React.FC = () => {
         </CardContent>
       </Card>
 
+      {/* Payment Interface Render Block */}
       <Card elevation={0} sx={{ border: '1px solid #e6e6e6', borderRadius: '8px', backgroundColor: '#ffffff' }}>
         <CardContent sx={{ p: 4 }}>
-          <Typography variant="subtitle2" sx={{ fontWeight: 850, color: '#1a1a1a', mb: 3, textTransform: 'uppercase' }}>
-            Dummy Payment Verification
-          </Typography>
-          <Box component="form" onSubmit={handleSubmit}>
-            <Grid container spacing={3}>
-              <Grid size={{ xs: 12 }}>
-                <TextField
-                  label="Name on Card"
-                  required
-                  fullWidth
-                  size="small"
-                  value={cardName}
-                  onChange={(e) => setCardName(e.target.value)}
-                />
-              </Grid>
-              <Grid size={{ xs: 12 }}>
-                <TextField
-                  label="Dummy Card Number"
-                  required
-                  fullWidth
-                  size="small"
-                  placeholder="xxxx xxxx xxxx xxxx"
-                  value={cardNumber}
-                  onChange={(e) => setCardNumber(e.target.value)}
-                />
-              </Grid>
-              <Grid size={{ xs: 6 }}>
-                <TextField
-                  label="Expiry (MM/YY)"
-                  required
-                  fullWidth
-                  size="small"
-                  placeholder="MM/YY"
-                  value={cardExpiry}
-                  onChange={(e) => setCardExpiry(e.target.value)}
-                />
-              </Grid>
-              <Grid size={{ xs: 6 }}>
-                <TextField
-                  label="CVV"
-                  required
-                  fullWidth
-                  size="small"
-                  type="password"
-                  placeholder="xxx"
-                  value={cardCvv}
-                  onChange={(e) => setCardCvv(e.target.value)}
-                />
-              </Grid>
-            </Grid>
+          {!isSimulatedMode ? (
+            <Box>
+              <Typography variant="subtitle2" sx={{ fontWeight: 850, color: '#1a1a1a', mb: 3, textTransform: 'uppercase' }}>
+                Hosted Payment Checkout
+              </Typography>
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 4 }}>
+                Upon clicking pay, you will be redirected to Razorpay's secure payment page. After paying, you will automatically return here to complete activation.
+              </Typography>
 
-            <Box sx={{ display: 'flex', gap: 2, mt: 4 }}>
-              <Button
-                variant="outlined"
-                fullWidth
-                onClick={() => navigate('/plans')}
-                sx={{
-                  py: 1.5,
-                  borderRadius: '6px',
-                  textTransform: 'none',
-                  fontWeight: 600,
-                  borderColor: '#e6e6e6',
-                  color: '#1a1a1a',
-                  '&:hover': { borderColor: '#1a1a1a' }
-                }}
-              >
-                Cancel
-              </Button>
-              <Button
-                type="submit"
-                variant="contained"
-                fullWidth
-                disabled={loading}
-                sx={{
-                  py: 1.5,
-                  borderRadius: '6px',
-                  textTransform: 'none',
-                  fontWeight: 700,
-                  backgroundColor: '#1a1a1a',
-                  color: '#ffffff',
-                  '&:hover': { backgroundColor: '#000000' }
-                }}
-              >
-                {loading ? 'Processing...' : 'Confirm Acquisition'}
-              </Button>
+              <Box sx={{ display: 'flex', gap: 2 }}>
+                <Button
+                  variant="outlined"
+                  fullWidth
+                  onClick={() => navigate('/plans')}
+                  sx={{
+                    py: 1.5,
+                    borderRadius: '6px',
+                    textTransform: 'none',
+                    fontWeight: 600,
+                    borderColor: '#e6e6e6',
+                    color: '#1a1a1a',
+                    '&:hover': { borderColor: '#1a1a1a' }
+                  }}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={handleProceedToPayment}
+                  variant="contained"
+                  fullWidth
+                  disabled={loading}
+                  sx={{
+                    py: 1.5,
+                    borderRadius: '6px',
+                    textTransform: 'none',
+                    fontWeight: 700,
+                    backgroundColor: '#1a1a1a',
+                    color: '#ffffff',
+                    '&:hover': { backgroundColor: '#000000' }
+                  }}
+                >
+                  {loading ? 'Generating Link...' : 'Pay Now'}
+                </Button>
+              </Box>
             </Box>
-          </Box>
+          ) : (
+            <Box>
+              <Alert severity="info" sx={{ mb: 3 }}>
+                Running in <strong>Simulated Sandbox Fallback Mode</strong>. Credentials are mocked.
+              </Alert>
+              <Typography variant="subtitle2" sx={{ fontWeight: 850, color: '#1a1a1a', mb: 2, textTransform: 'uppercase' }}>
+                Simulate Transaction Success
+              </Typography>
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 4 }}>
+                Since the payment client is offline/simulated, click below to verify a mock payment signature and activate your standard membership plan.
+              </Typography>
+
+              <Box sx={{ display: 'flex', gap: 2 }}>
+                <Button
+                  variant="outlined"
+                  fullWidth
+                  onClick={() => setIsSimulatedMode(false)}
+                  sx={{
+                    py: 1.5,
+                    borderRadius: '6px',
+                    textTransform: 'none',
+                    fontWeight: 600,
+                    borderColor: '#e6e6e6',
+                    color: '#1a1a1a',
+                    '&:hover': { borderColor: '#1a1a1a' }
+                  }}
+                >
+                  Back
+                </Button>
+                <Button
+                  onClick={handleSimulatedSuccess}
+                  variant="contained"
+                  fullWidth
+                  disabled={loading}
+                  sx={{
+                    py: 1.5,
+                    borderRadius: '6px',
+                    textTransform: 'none',
+                    fontWeight: 700,
+                    backgroundColor: '#fdf313',
+                    color: '#1a1a1a',
+                    '&:hover': { backgroundColor: '#e2d910' }
+                  }}
+                >
+                  {loading ? 'Verifying...' : 'Simulate Success'}
+                </Button>
+              </Box>
+            </Box>
+          )}
         </CardContent>
       </Card>
     </Container>

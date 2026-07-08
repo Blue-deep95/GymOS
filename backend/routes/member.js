@@ -12,6 +12,8 @@ router.use(authorizeRoles('user', 'member'));
 router.get('/dashboard', memberController.getDashboardData);
 router.get('/progress', memberController.getProgressHistory);
 router.post('/purchase', memberController.purchaseMembership);
+router.post('/purchase/order', memberController.createRazorpayOrder);
+router.post('/purchase/verify', memberController.verifyPaymentSignature);
 router.get('/check-in-token', memberController.getCheckInToken);
 router.put('/profile', memberController.updateProfile);
 
