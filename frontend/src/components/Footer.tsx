@@ -1,4 +1,4 @@
-import { Box, Container, Grid, Typography, Link, Button } from '@mui/material';
+import { Box, Container, Typography, Link } from '@mui/material';
 import { Link as RouterLink } from 'react-router';
 
 export const Footer = () => {
@@ -6,175 +6,86 @@ export const Footer = () => {
     <Box
       component="footer"
       sx={{
-        backgroundColor: '#f2f2f2', // Fog Surface
+        backgroundColor: '#ffffff',
         color: '#1a1a1a',
-        pt: 12,
-        pb: 18, // Generous breathing space (128px+)
+        py: 6,
         borderTop: '1px solid #e6e6e6',
       }}
     >
       <Container maxWidth="lg" sx={{ px: { xs: 2, md: 4 } }}>
-        <Grid container spacing={6}>
-          {/* Logo & Manifesto Column */}
-          <Grid size={{ xs: 12, md: 4 }}>
+        <Box
+          sx={{
+            display: 'flex',
+            flexDirection: { xs: 'column', md: 'row' },
+            justifyContent: 'space-between',
+            alignItems: { xs: 'flex-start', md: 'center' },
+            gap: 4,
+          }}
+        >
+          {/* Logo & Contact Info */}
+          <Box>
             <Typography
               sx={{
                 fontFamily: "'Manrope', sans-serif",
                 fontWeight: 900,
-                fontSize: '28px',
+                fontSize: '24px',
                 color: '#000000',
-                letterSpacing: '-1.5px',
-                mb: 2,
+                letterSpacing: '-1px',
+                mb: 1,
               }}
             >
-              S/
+              S/ gymOS
             </Typography>
-            <Typography
-              variant="body2"
-              sx={{
-                lineHeight: 1.6,
-                color: 'text.secondary',
-                maxWidth: '280px',
-              }}
-            >
-              A temple for strength. A community of movement. Zero commercial noise. gymOS is the premier strength training laboratory.
+            <Typography variant="body2" color="text.secondary" sx={{ fontSize: '13px' }}>
+              Sector 3, HSR Layout, Bengaluru, India &nbsp;|&nbsp; support@gymos.in &nbsp;|&nbsp; +91 99999 88888
             </Typography>
-          </Grid>
+          </Box>
 
-          {/* Spaces links */}
-          <Grid size={{ xs: 6, md: 3 }}>
-            <Typography
+          {/* Quick Info Links (Plans & Contact) */}
+          <Box sx={{ display: 'flex', gap: 3 }}>
+            <Link
+              component={RouterLink}
+              to="/plans"
               sx={{
-                fontFamily: "'Manrope', sans-serif",
-                fontWeight: 700,
+                fontFamily: "'Inter', sans-serif",
                 fontSize: '14px',
-                textTransform: 'uppercase',
-                letterSpacing: '0.1em',
-                color: '#1a1a1a',
-                mb: 3,
-              }}
-            >
-              The Labs
-            </Typography>
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
-              {['Strength Sanctuary', 'Conditioning Arena', 'Coaching Bureau', 'Recovery Compound'].map((item) => (
-                <Link
-                  key={item}
-                  href="#"
-                  sx={{
-                    fontFamily: "'Inter', sans-serif",
-                    fontSize: '15px',
-                    color: 'text.secondary',
-                    textDecoration: 'none',
-                    '&:hover': {
-                      color: 'text.primary',
-                    },
-                  }}
-                >
-                  {item}
-                </Link>
-              ))}
-            </Box>
-          </Grid>
-
-          {/* Membership links */}
-          <Grid size={{ xs: 6, md: 3 }}>
-            <Typography
-              sx={{
-                fontFamily: "'Manrope', sans-serif",
                 fontWeight: 700,
-                fontSize: '14px',
-                textTransform: 'uppercase',
-                letterSpacing: '0.1em',
                 color: '#1a1a1a',
-                mb: 3,
+                textDecoration: 'none',
+                textTransform: 'uppercase',
+                letterSpacing: '0.05em',
+                '&:hover': { color: 'text.secondary' }
               }}
             >
-              Membership
-            </Typography>
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
-              {['Pricing Plans', 'Coaching Schemes', 'Facility Rules', 'Guest Pass Request'].map((item) => (
-                <Link
-                  key={item}
-                  href="#"
-                  sx={{
-                    fontFamily: "'Inter', sans-serif",
-                    fontSize: '15px',
-                    color: 'text.secondary',
-                    textDecoration: 'none',
-                    '&:hover': {
-                      color: 'text.primary',
-                    },
-                  }}
-                >
-                  {item}
-                </Link>
-              ))}
-            </Box>
-          </Grid>
-
-          {/* Action Column */}
-          <Grid size={{ xs: 12, md: 2 }}>
-            <Typography
+              Plans & Features
+            </Link>
+            <Link
+              component={RouterLink}
+              to="/contact"
               sx={{
-                fontFamily: "'Manrope', sans-serif",
-                fontWeight: 700,
+                fontFamily: "'Inter', sans-serif",
                 fontSize: '14px',
-                textTransform: 'uppercase',
-                letterSpacing: '0.1em',
+                fontWeight: 700,
                 color: '#1a1a1a',
-                mb: 3,
+                textDecoration: 'none',
+                textTransform: 'uppercase',
+                letterSpacing: '0.05em',
+                '&:hover': { color: 'text.secondary' }
               }}
             >
-              Portal
-            </Typography>
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-              <Button
-                variant="outlined"
-                fullWidth
-                component={RouterLink}
-                to="/signin"
-                sx={{
-                  py: 1.25,
-                  fontSize: '14px',
-                  borderColor: '#1a1a1a',
-                  color: '#1a1a1a',
-                }}
-              >
-                Sign In
-              </Button>
-              <Button
-                variant="contained"
-                fullWidth
-                component={RouterLink}
-                to="/register"
-                sx={{
-                  py: 1.25,
-                  fontSize: '14px',
-                  backgroundColor: '#ffffff',
-                  color: '#1a1a1a',
-                  '&:hover': {
-                    backgroundColor: '#e6e6e6',
-                  },
-                }}
-              >
-                Register
-              </Button>
-            </Box>
-          </Grid>
-        </Grid>
+              Contact Support
+            </Link>
+          </Box>
+        </Box>
 
-        {/* Bottom copyright */}
         <Box
           sx={{
-            mt: 12,
-            pt: 4,
-            borderTop: '1px solid #e6e6e6',
+            mt: 4,
+            pt: 3,
+            borderTop: '1px solid #f2f2f2',
             display: 'flex',
-            flexDirection: { xs: 'column', sm: 'row' },
             justifyContent: 'space-between',
-            alignItems: 'center',
-            gap: 2,
+            alignItems: 'center'
           }}
         >
           <Typography
@@ -182,24 +93,14 @@ export const Footer = () => {
             sx={{
               fontFamily: "'Inter', sans-serif",
               color: 'text.secondary',
-              fontSize: '14px',
+              fontSize: '12px',
             }}
           >
             © {new Date().getFullYear()} gymOS Strength Lab. All rights reserved.
-          </Typography>
-          <Typography
-            variant="body2"
-            sx={{
-              fontFamily: "'Inter', sans-serif",
-              color: 'text.secondary',
-              fontSize: '14px',
-              letterSpacing: '0.05em',
-            }}
-          >
-            SINGLE-LOCATION PREMIUM TRAINING COMPOUND.
           </Typography>
         </Box>
       </Container>
     </Box>
   );
 };
+export default Footer;

@@ -7,10 +7,11 @@ const { generateAccessToken, generateRefreshToken } = require('../utils/jwt');
  * Helper to set the refresh token HTTP-only cookie on a response.
  */
 const setRefreshTokenCookie = (res, token) => {
+    const isProd = process.env.NODE_ENV === 'production';
     res.cookie('refreshToken', token, {
         httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'lax',
+        secure: isProd ? true : false,
+        sameSite: isProd ? 'none' : 'lax',
         maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days in milliseconds
     });
 };
@@ -151,10 +152,11 @@ const refresh = async (req, res) => {
  * Log out a user and clear their refresh token cookie
  */
 const logout = (req, res) => {
+    const isProd = process.env.NODE_ENV === 'production';
     res.clearCookie('refreshToken', {
         httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'strict'
+        secure: isProd ? true : false,
+        sameSite: isProd ? 'none' : 'lax'
     });
     res.status(200).json({ message: 'Logged out successfully' });
 };

@@ -18,6 +18,7 @@ export const CheckInDesk: React.FC = () => {
   
   const checkInMutation = useMutation('/api/receptionist/attendance/check-in', 'POST');
   const scannerRef = useRef<Html5QrcodeScanner | null>(null);
+  const lastScanTimeRef = useRef<number>(0);
 
   const members = membersData?.members || [];
 
@@ -114,6 +115,12 @@ export const CheckInDesk: React.FC = () => {
       (decodedText) => {
         // Handle successful scan
         if (decodedText) {
+          const now = Date.now();
+          if (now - lastScanTimeRef.current < 2000) {
+            // Drop scan frames during throttle cooldown
+            return;
+          }
+          lastScanTimeRef.current = now;
           handleQrCheckIn(decodedText);
         }
       },
