@@ -9,30 +9,32 @@ const api = axios.create({
   },
 });
 
-// Store access token in memory for security
-let accessToken = null;
-
 /**
- * Sets the access token in memory.
+ * Sets the access token in localStorage.
  * @param {string|null} token 
  */
 export const setAccessToken = (token) => {
-  accessToken = token;
+  if (token) {
+    localStorage.setItem('token', token);
+  } else {
+    localStorage.removeItem('token');
+  }
 };
 
 /**
- * Gets the current access token.
+ * Gets the current access token from localStorage.
  * @returns {string|null}
  */
 export const getAccessToken = () => {
-  return accessToken;
+  return localStorage.getItem('token');
 };
 
 // Request Interceptor: Attach the current access token to the Authorization header
 api.interceptors.request.use(
   (config) => {
-    if (accessToken) {
-      config.headers['Authorization'] = `Bearer ${accessToken}`;
+    const token = getAccessToken();
+    if (token) {
+      config.headers['Authorization'] = `Bearer ${token}`;
     }
     return config;
   },
@@ -93,9 +95,13 @@ api.interceptors.response.use(
       isRefreshing = true;
 
       try {
+        const baseUrl = api.defaults.baseURL.endsWith('/')
+          ? api.defaults.baseURL.slice(0, -1)
+          : api.defaults.baseURL;
+
         // Request a new access token from the refresh endpoint
         const response = await axios.post(
-          `${api.defaults.baseURL}/api/auth/refresh`,
+          `${baseUrl}/api/auth/refresh`,
           {},
           { withCredentials: true }
         );
