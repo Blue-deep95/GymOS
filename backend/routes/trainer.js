@@ -23,5 +23,6 @@ router.get('/members/:id/profile', trainerController.getMemberProfileDetail);
 router.get('/templates', trainerController.getWorkoutTemplates);
 router.post('/templates', trainerController.createWorkoutTemplate);
 router.delete('/templates/:id', trainerController.deleteWorkoutTemplate);
+router.put('/templates/:id', trainerController.updateWorkoutTemplate);
 
 module.exports = router;

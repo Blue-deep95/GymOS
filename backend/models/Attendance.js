@@ -13,6 +13,9 @@ const attendanceSchema = new mongoose.Schema({
     checkInTime: {
         type: Date,
         default: Date.now
+    },
+    secondCheckInTime: {
+        type: Date
     }
 }, {
     timestamps: true

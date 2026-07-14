@@ -266,6 +266,39 @@ const deleteWorkoutTemplate = async (req, res) => {
 };
 
 /**
+ * Update an existing workout template owned by this trainer.
+ */
+const updateWorkoutTemplate = async (req, res) => {
+    try {
+        const trainerId = req.user.id;
+        const templateId = req.params.id;
+        const { name, description, days } = req.body;
+
+        if (!name) {
+            return res.status(400).json({ message: 'Template name is required' });
+        }
+
+        const updatedTemplate = await WorkoutTemplate.findOneAndUpdate(
+            { _id: templateId, trainerId },
+            { name, description, days: days || [] },
+            { new: true }
+        );
+
+        if (!updatedTemplate) {
+            return res.status(404).json({ message: 'Template not found or unauthorized' });
+        }
+
+        res.status(200).json({
+            message: 'Workout template updated successfully',
+            template: updatedTemplate
+        });
+    } catch (err) {
+        console.error('Error in updateWorkoutTemplate:', err);
+        res.status(500).json({ message: 'Error updating workout template', error: err.message });
+    }
+};
+
+/**
  * Remove/unassign the workout program from a member.
  */
 const removeProgram = async (req, res) => {
@@ -409,6 +442,7 @@ module.exports = {
     getWorkoutTemplates,
     createWorkoutTemplate,
     deleteWorkoutTemplate,
+    updateWorkoutTemplate,
     removeProgram,
     recordProgress,
     getProgressHistory,

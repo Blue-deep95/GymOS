@@ -20,6 +20,9 @@ export const WorkoutTemplates: React.FC = () => {
   const { data, error, refetch } = useFetch('/api/trainer/templates');
   const createTemplateMutation = useMutation('/api/trainer/templates', 'POST');
   const deleteTemplateMutation = useMutation('', 'DELETE');
+  const updateTemplateMutation = useMutation('', 'PUT');
+
+  const [editingTemplateId, setEditingTemplateId] = useState<string | null>(null);
 
   const templates = data?.templates || [];
 
@@ -73,20 +76,51 @@ export const WorkoutTemplates: React.FC = () => {
     }
 
     try {
-      await createTemplateMutation.execute({
-        name: templateName,
-        description,
-        days
-      });
-      showToast('Workout blueprint created successfully', 'success');
-      // Clear form
-      setTemplateName('');
-      setDescription('');
-      setDays([{ dayName: 'Day 1 - Push', exercises: [{ exerciseName: 'Bench Press', sets: 3, reps: '8-12', notes: 'Flat barbell' }] }]);
+      if (editingTemplateId) {
+        const url = `/api/trainer/templates/${editingTemplateId}`;
+        await updateTemplateMutation.execute({
+          name: templateName,
+          description,
+          days
+        }, { url });
+        showToast('Workout blueprint updated successfully', 'success');
+      } else {
+        await createTemplateMutation.execute({
+          name: templateName,
+          description,
+          days
+        });
+        showToast('Workout blueprint created successfully', 'success');
+      }
+      handleCancelEdit();
       refetch();
     } catch (err: any) {
-      showToast(err.message || 'Failed to create template', 'error');
+      showToast(err.message || `Failed to ${editingTemplateId ? 'update' : 'create'} template`, 'error');
     }
+  };
+
+  const handleEditTemplate = (template: any) => {
+    setTemplateName(template.name || '');
+    setDescription(template.description || '');
+    const mappedDays = (template.days || []).map((day: any) => ({
+      dayName: day.dayName || '',
+      exercises: (day.exercises || []).map((ex: any) => ({
+        exerciseName: ex.exerciseName || '',
+        sets: ex.sets || 0,
+        reps: ex.reps || '',
+        notes: ex.notes || ''
+      }))
+    }));
+    setDays(mappedDays.length > 0 ? mappedDays : [{ dayName: 'Day 1 - Push', exercises: [{ exerciseName: 'Bench Press', sets: 3, reps: '8-12', notes: 'Flat barbell' }] }]);
+    setEditingTemplateId(template._id);
+    showToast(`Loaded "${template.name}" for editing`, 'info');
+  };
+
+  const handleCancelEdit = () => {
+    setTemplateName('');
+    setDescription('');
+    setDays([{ dayName: 'Day 1 - Push', exercises: [{ exerciseName: 'Bench Press', sets: 3, reps: '8-12', notes: 'Flat barbell' }] }]);
+    setEditingTemplateId(null);
   };
 
   const handleDeleteTemplate = async (id: string) => {
@@ -135,7 +169,7 @@ export const WorkoutTemplates: React.FC = () => {
           <Card elevation={0} sx={{ border: '1px solid #e6e6e6', borderRadius: '8px', backgroundColor: '#ffffff' }}>
             <CardContent sx={{ p: 4 }}>
               <Typography variant="h6" sx={{ fontFamily: "'Manrope', sans-serif", fontWeight: 800, color: '#1a1a1a', mb: 3 }}>
-                Design Workout Blueprint
+                {editingTemplateId ? 'Edit Workout Blueprint' : 'Design Workout Blueprint'}
               </Typography>
               
               <Box component="form" onSubmit={handleCreateTemplate} sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
@@ -280,21 +314,43 @@ export const WorkoutTemplates: React.FC = () => {
                   </Box>
                 </Box>
 
-                <Button
-                  variant="contained"
-                  type="submit"
-                  sx={{
-                    backgroundColor: '#1a1a1a',
-                    color: '#ffffff',
-                    fontWeight: 600,
-                    textTransform: 'none',
-                    py: 1.2,
-                    borderRadius: '8px',
-                    '&:hover': { backgroundColor: '#000000' }
-                  }}
-                >
-                  Create Blueprint
-                </Button>
+                <Box sx={{ display: 'flex', gap: 2 }}>
+                  <Button
+                    variant="contained"
+                    type="submit"
+                    fullWidth={!editingTemplateId}
+                    sx={{
+                      flexGrow: 1,
+                      backgroundColor: '#1a1a1a',
+                      color: '#ffffff',
+                      fontWeight: 600,
+                      textTransform: 'none',
+                      py: 1.2,
+                      borderRadius: '8px',
+                      '&:hover': { backgroundColor: '#000000' }
+                    }}
+                  >
+                    {editingTemplateId ? 'Update Blueprint' : 'Create Blueprint'}
+                  </Button>
+                  {editingTemplateId && (
+                    <Button
+                      variant="outlined"
+                      onClick={handleCancelEdit}
+                      sx={{
+                        borderColor: '#e6e6e6',
+                        color: '#757575',
+                        fontWeight: 600,
+                        textTransform: 'none',
+                        py: 1.2,
+                        px: 3,
+                        borderRadius: '8px',
+                        '&:hover': { borderColor: '#1a1a1a', backgroundColor: '#f2f2f2' }
+                      }}
+                    >
+                      Cancel
+                    </Button>
+                  )}
+                </Box>
               </Box>
             </CardContent>
           </Card>
@@ -320,12 +376,20 @@ export const WorkoutTemplates: React.FC = () => {
                           {template.description || 'No description provided'}
                         </Typography>
                       </Box>
-                      <IconButton size="small" onClick={() => handleDeleteTemplate(template._id)} color="error">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                          <polyline points="3 6 5 6 21 6" />
-                          <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-                        </svg>
-                      </IconButton>
+                      <Box sx={{ display: 'flex', gap: 0.5 }}>
+                        <IconButton size="small" onClick={() => handleEditTemplate(template)} sx={{ color: '#757575', '&:hover': { color: '#1a1a1a' } }}>
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                            <path d="M18.5 2.5a2.121 2.121 0 1 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                          </svg>
+                        </IconButton>
+                        <IconButton size="small" onClick={() => handleDeleteTemplate(template._id)} color="error">
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                            <polyline points="3 6 5 6 21 6" />
+                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                          </svg>
+                        </IconButton>
+                      </Box>
                     </Box>
                     <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 1, fontWeight: 600 }}>
                       Contains: {template.days?.length || 0} Training Days

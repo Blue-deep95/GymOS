@@ -13,7 +13,13 @@ const getMembersList = async (req, res) => {
             .populate('assignedTrainer', 'fullName email phone specialization')
             .populate('currentMembership');
 
-        res.status(200).json({ members });
+        const todayStr = new Date().toISOString().split('T')[0];
+        const todayAttendanceCount = await Attendance.countDocuments({ date: todayStr });
+        const todayAttendances = await Attendance.find({ date: todayStr })
+            .populate('memberId', 'fullName email phone')
+            .sort({ checkInTime: -1 });
+
+        res.status(200).json({ members, todayAttendanceCount, todayAttendances });
     } catch (err) {
         console.error('Error in getMembersList:', err);
         res.status(500).json({ message: 'Error retrieving member directory', error: err.message });
@@ -174,6 +180,60 @@ const checkInMember = async (req, res) => {
         const todayStr = new Date().toISOString().split('T')[0];
 
         try {
+            const existingAttendance = await Attendance.findOne({ memberId: targetMemberId, date: todayStr });
+
+            if (existingAttendance) {
+                if (existingAttendance.secondCheckInTime) {
+                    return res.status(400).json({
+                        message: 'Member has already checked in twice today.',
+                        member: {
+                            id: member._id,
+                            fullName: member.fullName,
+                            email: member.email,
+                            assignedTrainerName: member.assignedTrainer?.fullName || 'Unassigned',
+                            planType: member.currentMembership.planType,
+                            status: member.currentMembership.status
+                        }
+                    });
+                }
+
+                const firstCheckIn = new Date(existingAttendance.checkInTime);
+                const now = new Date();
+                const gapMs = now - firstCheckIn;
+                const gapHours = gapMs / (1000 * 60 * 60);
+
+                if (gapHours < 10) {
+                    const remainingHours = (10 - gapHours).toFixed(1);
+                    return res.status(400).json({
+                        message: `Check-in denied. A minimum gap of 10 hours is required. Please retry in ${remainingHours} hours.`,
+                        member: {
+                            id: member._id,
+                            fullName: member.fullName,
+                            email: member.email,
+                            assignedTrainerName: member.assignedTrainer?.fullName || 'Unassigned',
+                            planType: member.currentMembership.planType,
+                            status: member.currentMembership.status
+                        }
+                    });
+                }
+
+                existingAttendance.secondCheckInTime = now;
+                await existingAttendance.save();
+
+                return res.status(200).json({
+                    message: `Second check-in successful for ${member.fullName}. Welcome back!`,
+                    attendance: existingAttendance,
+                    member: {
+                        id: member._id,
+                        fullName: member.fullName,
+                        email: member.email,
+                        assignedTrainerName: member.assignedTrainer?.fullName || 'Unassigned',
+                        planType: member.currentMembership.planType,
+                        status: member.currentMembership.status
+                    }
+                });
+            }
+
             const newAttendance = new Attendance({
                 memberId: targetMemberId,
                 date: todayStr,
@@ -196,7 +256,6 @@ const checkInMember = async (req, res) => {
             });
         } catch (dbErr) {
             console.error('Database Error in checkInMember save:', dbErr);
-            // Duplicate key error (code 11000) means already checked in today
             if (dbErr.code === 11000) {
                 return res.status(400).json({
                     message: 'Member has already checked in today.',
@@ -210,7 +269,7 @@ const checkInMember = async (req, res) => {
                     }
                 });
             }
-            throw dbErr; // escalate to outer catch
+            throw dbErr;
         }
     } catch (err) {
         console.error('Error in checkInMember:', err);
